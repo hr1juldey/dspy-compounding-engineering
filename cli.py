@@ -46,11 +46,19 @@ def work(plan_file: str):
 
 
 @app.command()
-def review(pr_url_or_id: str = "latest"):
+def review(
+    pr_url_or_id: str = typer.Argument("latest", help="PR number, URL, branch name, or 'latest' for local changes"),
+    project: bool = typer.Option(False, "--project", "-p", help="Review entire project instead of just changes"),
+):
     """
     Perform exhaustive multi-agent code reviews.
+
+    Examples:
+        uv run python cli.py review              # Review local changes
+        uv run python cli.py review --project    # Review entire project
+        uv run python cli.py review 123          # Review PR #123
     """
-    run_review(pr_url_or_id)
+    run_review(pr_url_or_id, project=project)
 
 
 @app.command()

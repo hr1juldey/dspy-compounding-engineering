@@ -21,23 +21,68 @@ from utils.todo_service import create_finding_todo
 
 console = Console()
 
-def run_review(pr_url_or_id: str):
+def _gather_project_files() -> str:
+    """Gather all relevant project files for full project review."""
+    project_content = []
+
+    # File extensions to include
+    code_extensions = {'.py', '.js', '.ts', '.tsx', '.jsx', '.rb', '.go', '.rs', '.java', '.kt'}
+    config_extensions = {'.toml', '.yaml', '.yml', '.json'}
+
+    # Directories to skip
+    skip_dirs = {'.git', '.venv', 'venv', 'node_modules', '__pycache__', '.pytest_cache',
+                 'dist', 'build', '.tox', '.mypy_cache', 'worktrees', '.ruff_cache'}
+
+    for root, dirs, files in os.walk('.'):
+        # Filter out skip directories
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+
+        for filename in files:
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in code_extensions or ext in config_extensions:
+                filepath = os.path.join(root, filename)
+                try:
+                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                        # Skip very large files
+                        if len(content) > 50000:
+                            content = content[:50000] + "\n...[truncated]..."
+                        project_content.append(f"=== {filepath} ===\n{content}\n")
+                except Exception:
+                    pass
+
+    return "\n".join(project_content)
+
+
+def run_review(pr_url_or_id: str, project: bool = False):
     """
     Perform exhaustive multi-agent code review.
-    
+
     Args:
         pr_url_or_id: PR number, GitHub URL, branch name, or 'latest'
+        project: If True, review entire project instead of just changes
     """
-    
+
     from utils.git_service import GitService
     import concurrent.futures
-    
-    console.print(f"[bold]Starting Code Review:[/bold] {pr_url_or_id}\n")
-    
+
+    if project:
+        console.print("[bold]Starting Full Project Review[/bold]\n")
+    else:
+        console.print(f"[bold]Starting Code Review:[/bold] {pr_url_or_id}\n")
+
     worktree_path = None
-    
+
     try:
-        if pr_url_or_id == "latest":
+        if project:
+            # Full project review - gather all source files
+            console.print("[cyan]Gathering project files...[/cyan]")
+            code_diff = _gather_project_files()
+            if not code_diff:
+                console.print("[red]No source files found to review![/red]")
+                return
+            console.print(f"[green]✓ Gathered {len(code_diff):,} characters of project code[/green]")
+        elif pr_url_or_id == "latest":
             # Default to checking current staged/unstaged changes or HEAD
             console.print("[cyan]Fetching local changes...[/cyan]")
             code_diff = GitService.get_diff("HEAD")
@@ -48,13 +93,13 @@ def run_review(pr_url_or_id: str):
             # Fetch PR diff
             console.print(f"[cyan]Fetching diff for {pr_url_or_id}...[/cyan]")
             code_diff = GitService.get_pr_diff(pr_url_or_id)
-            
+
             # Create isolated worktree for PR
             try:
                 # Sanitize ID for path
                 safe_id = "".join(c for c in pr_url_or_id if c.isalnum() or c in ('-', '_'))
                 worktree_path = f"worktrees/review-{safe_id}"
-                
+
                 if os.path.exists(worktree_path):
                     console.print(f"[yellow]Worktree {worktree_path} already exists. Using it.[/yellow]")
                 else:
@@ -63,18 +108,18 @@ def run_review(pr_url_or_id: str):
                     console.print(f"[green]✓ Worktree created[/green]")
             except Exception as e:
                 console.print(f"[yellow]Warning: Could not create worktree (proceeding with diff only): {e}[/yellow]")
-            
+
         if not code_diff:
             console.print("[red]No diff found to review![/red]")
             return
-            
+
         # Truncate if too large (simple safety check)
         if len(code_diff) > 100000:
-            console.print(f"[yellow]Warning: Diff is very large ({len(code_diff)} chars). Truncating...[/yellow]")
+            console.print(f"[yellow]Warning: Content is very large ({len(code_diff)} chars). Truncating...[/yellow]")
             code_diff = code_diff[:100000] + "\n...[truncated]..."
-            
+
     except Exception as e:
-        console.print(f"[red]Error fetching diff: {e}[/red]")
+        console.print(f"[red]Error fetching content: {e}[/red]")
         # Fallback for demo purposes if git fails
         console.print("[yellow]Falling back to placeholder diff for demonstration...[/yellow]")
         code_diff = """

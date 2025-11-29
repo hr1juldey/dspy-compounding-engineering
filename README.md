@@ -61,10 +61,10 @@ uv sync
 
 While the core agentic workflows are fully functional, some integrations present in the original plugin are currently **unimplemented** or **simplified**:
 
--   ❌ **GitHub Integration**: Currently, the tool does not create GitHub Issues, post PR comments, or manage GitHub Projects. It operates entirely on local files.
--   ❌ **Smart Context Gathering**: The planning workflow uses a basic file listing strategy. It does not yet use vector search or smart dependency graph analysis to find relevant context.
--   ❌ **Comprehensive Testing**: While `work.py` runs tests, there is no robust test runner integration or coverage reporting.
--   ❌ **IDE Integration**: No VS Code or JetBrains plugins yet.
+- ❌ **GitHub Integration**: Currently, the tool does not create GitHub Issues, post PR comments, or manage GitHub Projects. It operates entirely on local files.
+- ❌ **Smart Context Gathering**: The planning workflow uses a basic file listing strategy. It does not yet use vector search or smart dependency graph analysis to find relevant context.
+- ❌ **Comprehensive Testing**: While `work.py` runs tests, there is no robust test runner integration or coverage reporting.
+- ❌ **IDE Integration**: No VS Code or JetBrains plugins yet.
 
 ## Configuration
 
@@ -96,6 +96,9 @@ Run a comprehensive multi-agent review on your current changes:
 # Review latest local changes
 uv run python cli.py review
 
+# Review entire project (not just changes)
+uv run python cli.py review --project
+
 # Review a specific PR (requires gh cli)
 uv run python cli.py review https://github.com/user/repo/pull/123
 ```
@@ -113,7 +116,46 @@ uv run python cli.py triage
 - **All**: Batch approve all remaining items
 - **Custom**: Change priority or details
 
-### 3. Plan New Features
+### 3. Resolve Todos
+
+Automatically resolve ready todos using AI agents in isolated worktrees:
+
+```bash
+# Resolve all ready todos
+uv run python cli.py resolve-todo
+
+# Resolve todos matching a pattern (e.g., P1 priority)
+uv run python cli.py resolve-todo p1
+
+# Preview changes without applying (dry run)
+uv run python cli.py resolve-todo --dry-run
+
+# Run sequentially instead of in parallel
+uv run python cli.py resolve-todo --sequential
+```
+
+This will:
+
+1. Find all `*-ready-*.md` todos matching the pattern
+2. Analyze dependencies between todos
+3. Create an isolated worktree with a new branch
+4. Resolve each todo using AI agents
+5. Mark todos as complete (`*-complete-*.md`)
+6. Commit changes and provide PR instructions
+
+### 4. Generate Commands
+
+Generate shell commands from natural language descriptions:
+
+```bash
+# Generate a command
+uv run python cli.py generate-command "find all Python files modified in the last week"
+
+# Execute the generated command (use with caution)
+uv run python cli.py generate-command "list large files" --execute
+```
+
+### 5. Plan New Features
 
 Generate a detailed implementation plan:
 
@@ -121,7 +163,7 @@ Generate a detailed implementation plan:
 uv run python cli.py plan "Add user authentication with OAuth"
 ```
 
-### 4. Execute Work
+### 6. Execute Work
 
 Execute a plan or todo file in a secure, isolated environment:
 
@@ -130,6 +172,7 @@ uv run python cli.py work plans/my-feature.md
 ```
 
 This will:
+
 1. Create a `feature/<name>` branch
 2. Create an isolated worktree in `worktrees/`
 3. Implement the changes and run tests
@@ -137,20 +180,23 @@ This will:
 
 ## Architecture
 
-```
+```text
 dspy-compounding-engineering/
-├── agents/               # DSPy Signatures
-│   ├── review/           # 10+ Review Agents
-│   ├── research/         # Research & Analysis Agents
-│   └── workflow/         # Execution & Triage Agents
-├── workflows/            # Command Logic
-│   ├── review.py         # Parallel review orchestration
-│   ├── work.py           # Secure worktree execution
-│   └── plan.py           # Research & planning
-├── utils/                # Core Utilities
-│   ├── git_service.py    # Git & Worktree management
-│   └── todo_service.py   # Structured todo generation
-└── cli.py                # Typer CLI entry point
+├── agents/                  # DSPy Signatures
+│   ├── review/              # 10+ Review Agents
+│   ├── research/            # Research & Analysis Agents
+│   └── workflow/            # Execution & Triage Agents
+├── workflows/               # Command Logic
+│   ├── review.py            # Parallel review orchestration
+│   ├── resolve_todo.py      # AI-powered todo resolution
+│   ├── generate_command.py  # Natural language → shell commands
+│   ├── work.py              # Secure worktree execution
+│   └── plan.py              # Research & planning
+├── utils/                   # Core Utilities
+│   ├── git_service.py       # Git & Worktree management
+│   ├── safe_io.py           # Secure file operations
+│   └── todo_service.py      # Structured todo generation
+└── cli.py                   # Typer CLI entry point
 ```
 
 ## Philosophy
