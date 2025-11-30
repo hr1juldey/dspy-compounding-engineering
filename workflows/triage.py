@@ -41,6 +41,14 @@ def _add_work_log_entry(content: str, action: str) -> str:
     return content + "\n" + work_log_entry
 
 
+def _fill_recommended_action(content: str) -> str:
+    """Replace the 'Recommended Action' placeholder with actual recommendation."""
+    placeholder = "*To be filled during triage.*"
+    recommendation = "Implement the proposed solution from the code review finding (Option 1)."
+    
+    return content.replace(placeholder, recommendation)
+
+
 def run_triage():
     todos_dir = "todos"
     if not os.path.exists(todos_dir):
@@ -116,6 +124,7 @@ def run_triage():
 
                 # Update status in content and add work log entry
                 new_content = content.replace("status: pending", "status: ready")
+                new_content = _fill_recommended_action(new_content)
                 new_content = _add_work_log_entry(new_content, "Issue approved during triage session")
 
                 with open(new_path, "w") as f:
@@ -145,6 +154,7 @@ def run_triage():
                     new_path = os.path.join(todos_dir, new_filename)
 
                     new_content = remaining_content.replace("status: pending", "status: ready")
+                    new_content = _fill_recommended_action(new_content)
                     new_content = _add_work_log_entry(new_content, "Issue approved (batch accept all)")
 
                     with open(new_path, "w") as f:
@@ -190,6 +200,7 @@ def run_triage():
                 # Update content
                 new_content = content.replace("status: pending", "status: ready")
                 new_content = re.sub(r"priority: p[123]", f"priority: {new_priority}", new_content)
+                new_content = _fill_recommended_action(new_content)
                 new_content = _add_work_log_entry(new_content, f"Issue approved with custom priority: {new_priority}")
 
                 with open(new_path, "w") as f:

@@ -19,7 +19,7 @@ class KnowledgeBase:
     Manages a collection of learnings stored as JSON files.
     """
     
-    def __init__(self, knowledge_dir: str = "knowledge"):
+    def __init__(self, knowledge_dir: str = ".knowledge"):
         self.knowledge_dir = knowledge_dir
         self._ensure_knowledge_dir()
         
@@ -53,6 +53,10 @@ class KnowledgeBase:
             with open(filepath, "w") as f:
                 json.dump(learning, f, indent=2)
             console.print(f"[green]✓ Learning saved to {filepath}[/green]")
+            
+            # Update AI.md
+            self._update_ai_md()
+            
             return filepath
         except Exception as e:
             console.print(f"[red]Failed to save learning: {e}[/red]")
@@ -129,3 +133,44 @@ class KnowledgeBase:
             context += "\n"
             
         return context
+        return context
+
+    def _update_ai_md(self):
+        """
+        Update the AI.md file with a consolidated summary of all learnings.
+        This file serves as a human-readable and LLM-friendly index.
+        """
+        learnings = self.get_all_learnings()
+        
+        # Group by category
+        by_category = {}
+        for l in learnings:
+            cat = l.get("category", "General").title()
+            if cat not in by_category:
+                by_category[cat] = []
+            by_category[cat].append(l)
+            
+        content = "# AI Knowledge Base\n\n"
+        content += "This file contains codified learnings and improvements for the AI system.\n"
+        content += "It is automatically updated when new learnings are added.\n\n"
+        
+        for category, items in sorted(by_category.items()):
+            content += f"## {category}\n\n"
+            for item in items:
+                content += f"### {item.get('title', 'Untitled')}\n"
+                content += f"{item.get('description', '')}\n\n"
+                
+                if item.get('codified_improvements'):
+                    content += "**Improvements:**\n"
+                    for imp in item['codified_improvements']:
+                        type_badge = f"[{imp.get('type', 'item').upper()}]"
+                        content += f"- {type_badge} {imp.get('title', '')}: {imp.get('description', '')}\n"
+                content += "\n"
+                
+        ai_md_path = os.path.join(self.knowledge_dir, "AI.md")
+        try:
+            with open(ai_md_path, "w") as f:
+                f.write(content)
+            console.print(f"[dim]Updated {ai_md_path}[/dim]")
+        except Exception as e:
+            console.print(f"[yellow]Failed to update AI.md: {e}[/yellow]")

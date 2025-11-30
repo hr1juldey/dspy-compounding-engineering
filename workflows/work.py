@@ -109,6 +109,22 @@ def run_work(plan_file: str) -> None:
     # Validate file exists
     if not os.path.exists(plan_file):
         console.print(f"[red]Error: File not found: {plan_file}[/red]")
+        
+        # Check if this looks like a todo pattern and provide helpful guidance
+        if re.match(r'^\d+$', plan_file) or plan_file.lower() in ['p1', 'p2', 'p3']:
+            console.print("\n[yellow]💡 It looks like you're trying to resolve a todo.[/yellow]")
+            console.print("\n[bold]The 'work' command is for executing plan files:[/bold]")
+            console.print("  [cyan]uv run python cli.py work plans/my-feature.md[/cyan]")
+            console.print("\n[bold]To resolve todos, use the 'resolve-todo' command:[/bold]")
+            if re.match(r'^\d+$', plan_file):
+                console.print(f"  [cyan]uv run python cli.py resolve-todo {plan_file}[/cyan]  [dim]# Resolve todo #{plan_file}[/dim]")
+            elif plan_file.lower() in ['p1', 'p2', 'p3']:
+                console.print(f"  [cyan]uv run python cli.py resolve-todo {plan_file}[/cyan]  [dim]# Resolve all {plan_file.upper()} todos[/dim]")
+            console.print("  [cyan]uv run python cli.py resolve-todo[/cyan]  [dim]# Resolve all ready todos[/dim]")
+        else:
+            console.print("\n[yellow]💡 Make sure the plan file path is correct.[/yellow]")
+            console.print("[dim]Example: uv run python cli.py work plans/my-feature.md[/dim]")
+        
         return
 
     # Read plan content

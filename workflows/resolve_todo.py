@@ -466,7 +466,8 @@ def run_resolve_todo(
     pattern: Optional[str] = None,
     dry_run: bool = False,
     parallel: bool = True,
-    max_workers: int = 3
+    max_workers: int = 3,
+    in_place: bool = True
 ) -> None:
     """
     Main entrypoint for resolving todos.
@@ -476,10 +477,12 @@ def run_resolve_todo(
         dry_run: If True, show what would be done without applying changes
         parallel: If True, resolve todos in parallel where possible
         max_workers: Maximum number of parallel workers
+        in_place: If True, apply changes to current branch; if False, use isolated worktree
     """
+    mode = "In-Place" if in_place else "Worktree"
     console.print(Panel.fit(
         "[bold]Compounding Engineering: Resolve Todos[/bold]\n"
-        f"Pattern: {pattern or 'all'} | Dry Run: {dry_run} | Parallel: {parallel}",
+        f"Pattern: {pattern or 'all'} | Mode: {mode} | Dry Run: {dry_run} | Parallel: {parallel}",
         border_style="blue"
     ))
 
@@ -528,13 +531,13 @@ def run_resolve_todo(
             console.print("[yellow]Aborted.[/yellow]")
             return
 
-    # Phase 3: Setup worktree
+    # Phase 3: Setup worktree (if not in-place)
     console.rule("[bold]Phase 3: Environment Setup[/bold]")
 
     worktree_path = None
     branch_name = None
 
-    if not dry_run:
+    if not dry_run and not in_place:
         # Create branch name from todos
         timestamp = datetime.now().strftime("%Y%m%d-%H%M")
         todo_ids = "-".join([t['id'] for t in todos[:3]])  # Limit to first 3 IDs
@@ -547,6 +550,8 @@ def run_resolve_todo(
             console.print(f"[green]Branch: {branch_name}[/green]")
         except Exception as e:
             console.print(f"[yellow]Warning: Could not create worktree, working in place: {e}[/yellow]")
+    elif not dry_run:
+        console.print("[cyan]Applying changes directly to current branch[/cyan]")
 
     # Phase 4: Execute resolutions
     console.rule("[bold]Phase 4: Resolution[/bold]")

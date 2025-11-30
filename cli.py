@@ -82,6 +82,11 @@ def resolve_todo(
         3,
         "--workers", "-w",
         help="Maximum number of parallel workers"
+    ),
+    in_place: bool = typer.Option(
+        True,
+        "--in-place/--worktree",
+        help="Apply changes in-place to current branch (default) or use isolated worktree"
     )
 ):
     """
@@ -106,7 +111,8 @@ def resolve_todo(
         pattern=pattern,
         dry_run=dry_run,
         parallel=not sequential,
-        max_workers=max_workers
+        max_workers=max_workers,
+        in_place=in_place
     )
 
 
