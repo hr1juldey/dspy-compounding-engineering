@@ -10,11 +10,18 @@ This CLI tool provides AI-powered development tools for code review, planning, a
 
 ## Features
 
+- **🧠 Compounding Engineering**: True learning system where every operation makes the next one easier
+  - **Auto-Learning**: Every todo resolution automatically codifies learnings
+  - **KB Auto-Injection**: Past learnings automatically inform all AI operations
+  - **Pattern Recognition**: Similar issues are prevented based on past resolutions
+  - **Knowledge Accumulation**: System gets smarter with every use
+
 - **🔍 Multi-Agent Code Review**: Run 10+ specialized review agents in parallel
   - **Security Sentinel**: Detects vulnerabilities (SQLi, XSS, etc.)
   - **Performance Oracle**: Identifies bottlenecks and O(n) issues
   - **Architecture Strategist**: Reviews design patterns and SOLID principles
   - **Data Integrity Guardian**: Checks transaction safety and validation
+  - **KB-Augmented**: All agents benefit from past code review learnings
   - And many more...
 
 - **🤖 ReAct File Editing**: Intelligent file operations with reasoning
@@ -26,16 +33,19 @@ This CLI tool provides AI-powered development tools for code review, planning, a
   - **Isolated Worktrees**: Optional `--worktree` mode for safe parallel execution
   - **Parallel Processing**: Multi-threaded todo resolution with `--workers`
   - **Flexible Modes**: In-place (default) or isolated worktree execution
+  - **Auto-Codification**: Every resolution creates learnings for future use
 
 - **📋 Smart Planning**: Transform feature descriptions into detailed plans
   - Repository research & pattern analysis
   - Framework documentation integration
   - SpecFlow user journey analysis
+  - **KB-Informed**: Plans leverage past architectural decisions
 
 - **✅ Interactive Triage**: Manage code review findings
   - **Batch Operations**: Approve multiple findings at once
   - **Smart Priorities**: Auto-detection of P1/P2/P3 severity
   - **Work Logs**: Tracks decisions and rationale automatically
+  - **KB-Augmented**: Triage decisions informed by past patterns
 
 ## Installation
 
@@ -62,14 +72,49 @@ cp .env.example .env
 uv sync
 ```
 
-## Roadmap & Missing Features
+## The Compounding Engineering Loop
 
-While the core agentic workflows are fully functional, some integrations present in the original plugin are currently **unimplemented** or **simplified**:
+This implementation embodies the core philosophy: **each unit of work makes subsequent work easier**.
 
-- ❌ **GitHub Integration**: Currently, the tool does not create GitHub Issues, post PR comments, or manage GitHub Projects. It operates entirely on local files.
-- ❌ **Smart Context Gathering**: The planning workflow uses a basic file listing strategy. It does not yet use vector search or smart dependency graph analysis to find relevant context.
-- ❌ **Comprehensive Testing**: While `work.py` runs tests, there is no robust test runner integration or coverage reporting.
-- ❌ **IDE Integration**: No VS Code or JetBrains plugins yet.
+```mermaid
+graph LR
+    A[Plan] -->|KB Context| B[Execute Work]
+    B -->|KB Context| C[Review Code]
+    C -->|KB Context| D[Triage Findings]
+    D -->|Auto-Codify| KB[(Knowledge Base)]
+    KB -->|Auto-Inject| A
+    KB -->|Auto-Inject| B
+    KB -->|Auto-Inject| C
+    KB -->|Auto-Inject| D
+    
+    style KB fill:#4CAF50,stroke:#333,stroke-width:3px
+    style D fill:#FFC107,stroke:#333,stroke-width:2px
+```
+
+**How it works:**
+
+1. **Auto-Injection**: All AI operations (`review`, `triage`, `plan`, `work`) automatically receive relevant past learnings
+2. **Auto-Codification**: Every todo resolution automatically extracts and stores learnings
+3. **Pattern Recognition**: The system identifies similar issues and suggests solutions based on past successes
+4. **Continuous Improvement**: The more you use it, the smarter it gets
+
+### Knowledge Base Features
+
+- **Persistent Learning**: Learnings stored in `.knowledge/` as structured JSON
+- **Smart Retrieval**: Keyword-based similarity matching (extensible to vector embeddings)
+- **Auto-Documentation**: `AI.md` automatically updated with consolidated learnings
+- **Tagged Search**: Filter learnings by category, source, or topic
+
+## Roadmap
+
+While the core compounding engineering system is fully functional, some enhancements are planned:
+
+- 🔄 **Vector Embeddings**: Upgrade from keyword matching to semantic similarity
+- 🤖 **Auto-Triage**: Pattern-based auto-approval/rejection of similar findings
+- 📊 **Learning Analytics**: Dashboard showing knowledge growth and reuse
+- 🔗 **GitHub Integration**: Create Issues, post PR comments, manage Projects
+- 🧪 **Test Runner Integration**: Robust test execution and coverage reporting
+- 🔌 **IDE Plugins**: VS Code and JetBrains extensions
 
 ## Configuration
 
@@ -78,17 +123,22 @@ Edit `.env` to configure your LLM provider:
 ```bash
 # OpenAI
 DSPY_LM_PROVIDER=openai
-DSPY_LM_MODEL=gpt-4o
+DSPY_LM_MODEL=gpt-5.1-codex
 OPENAI_API_KEY=sk-...
 
 # Anthropic
 DSPY_LM_PROVIDER=anthropic
-DSPY_LM_MODEL=claude-3-5-sonnet-20241022
+DSPY_LM_MODEL=claude-4-5-haiku
 ANTHROPIC_API_KEY=sk-ant-...
 
 # Ollama (Local)
 DSPY_LM_PROVIDER=ollama
-DSPY_LM_MODEL=qwen2.5-coder:14b
+DSPY_LM_MODEL=qwen3
+
+# OpenRouter (Multi-Model Access)
+DSPY_LM_PROVIDER=openrouter
+DSPY_LM_MODEL=x-ai/grok-4.1-fast:free
+OPENROUTER_API_KEY=sk-or-...
 ```
 
 ## Usage
@@ -209,9 +259,11 @@ dspy-compounding-engineering/
 
 Based on the [Compounding Engineering](https://every.to/source-code/my-ai-had-already-fixed-the-code-before-i-saw-it) philosophy:
 
-- **Plan → Delegate → Assess → Codify**
-- Systematic beats heroic
-- Quality compounds over time
+- **Plan → Delegate → Assess → Codify** (fully implemented)
+- **Each unit of work makes subsequent work easier** (via KB auto-injection)
+- **Systematic beats heroic** (automated learning and reuse)
+- **Quality compounds over time** (system gets smarter with use)
+- **Knowledge is automatically codified** (not optional)
 
 ## Comparison with Original Plugin
 
@@ -221,6 +273,8 @@ Based on the [Compounding Engineering](https://every.to/source-code/my-ai-had-al
 | **LLM** | Claude Only | OpenAI, Anthropic, Ollama |
 | **Execution** | Direct File Edit | **Secure Git Worktrees** |
 | **Integration**| GitHub App | Local-First CLI |
+| **Learning** | Manual CLAUDE.md | **Automatic KB Injection** |
+| **Codification** | Manual | **Automatic on every resolution** |
 
 ## License
 

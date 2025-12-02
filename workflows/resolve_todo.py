@@ -25,7 +25,7 @@ from rich.prompt import Confirm
 from agents.workflow import TodoResolver, TodoDependencyAnalyzer
 from agents.workflow.feedback_codifier import FeedbackCodifier
 from utils.safe_io import safe_apply_operations, skip_ai_commands
-from utils.knowledge_base import KnowledgeBase
+from utils.kb_module import KBPredict
 
 console = Console()
 
@@ -293,12 +293,6 @@ def _resolve_single_todo(
     project_context = _get_project_context()
 
     # Get knowledge base context
-    kb = KnowledgeBase()
-    kb_context = kb.get_context_string(query=f"{todo['slug']} {todo['content']}")
-    if kb_context:
-        project_context += "\n\n" + kb_context
-
-    # Extract affected files from todo content (look for file paths)
     affected_files_content = "No specific files identified."
     file_pattern = re.findall(r"`([^`]+\.[a-z]+)`", todo["content"])
     if file_pattern:
@@ -322,8 +316,10 @@ def _resolve_single_todo(
         return {"status": "dry_run", "todo_id": todo["id"]}
 
     # Invoke the TodoResolver agent
-    try:
-        resolver = dspy.Predict(TodoResolver)
+        resolver = KBPredict(
+            TodoResolver,
+            kb_tags=["todo-resolution"],
+        )
         result = resolver(
             todo_content=todo["content"],
             todo_id=todo["id"],
@@ -362,28 +358,37 @@ def _resolve_single_todo(
         # Mark todo as complete
         _mark_todo_complete(todo, resolution, worktree_path)
 
-        return {
+        # Prepare result data
+        result_data = {
             "status": "success",
             "todo_id": todo["id"],
             "summary": resolution.get("summary", "Resolved"),
             "operations_count": len(resolution.get("operations", [])),
         }
 
-        # Auto-codify the resolution if successful
+        # Auto-codify the resolution (ALWAYS, not optional)
+        # This is the KEY to compounding engineering - every resolution creates learnings
         try:
-            codifier = dspy.Predict(FeedbackCodifier)
+            codifier = KBPredict(
+                FeedbackCodifier,
+                kb_tags=["todo-resolution", "codification"],
+            )
             feedback_text = f"""
-            Resolved Issue: {todo["slug"]}
-            Resolution Summary: {resolution.get("summary", "Resolved")}
-            Operations: {json.dumps(resolution.get("operations", []))}
-            """
+Resolved Issue: {todo["slug"]}
+Resolution Summary: {resolution.get("summary", "Resolved")}
+Operations: {len(resolution.get("operations", []))} changes made
+
+Full Resolution:
+{json.dumps(resolution, indent=2)}
+"""
+
             result = codifier(
                 feedback_content=feedback_text,
                 feedback_source="todo_resolution",
                 project_context=project_context,
             )
 
-            # Parse and save
+            # Parse and save codified learning
             json_str = result.codification_json
             if "```json" in json_str:
                 json_match = re.search(r"```json\s*(.*?)\s*```", json_str, re.DOTALL)
@@ -401,19 +406,15 @@ def _resolve_single_todo(
 
             kb = KnowledgeBase()
             kb.add_learning(codified_data)
-            console.print("[dim]Codified learning from resolution.[/dim]")
+            console.print("[dim green]✓ Codified learning from resolution[/dim green]")
 
         except Exception as e:
+            # Don't fail the entire resolution if codification fails
             console.print(
-                f"[dim yellow]Failed to auto-codify learning: {e}[/dim yellow]"
+                f"[yellow]⚠ Could not codify learning (but resolution succeeded): {e}[/yellow]"
             )
 
-        return {
-            "status": "success",
-            "todo_id": todo["id"],
-            "summary": resolution.get("summary", "Resolved"),
-            "operations_count": len(resolution.get("operations", [])),
-        }
+        return result_data
 
     except Exception as e:
         console.print(f"[red]Error resolving todo {todo['id']}: {e}[/red]")
@@ -447,7 +448,10 @@ def _analyze_dependencies(todos: list[dict]) -> dict:
     )
 
     try:
-        analyzer = dspy.Predict(TodoDependencyAnalyzer)
+        analyzer = KBPredict(
+            TodoDependencyAnalyzer,
+            kb_tags=["todo-resolution", "dependencies"],
+        )
         result = analyzer(todos_summary=todos_summary)
 
         # Parse the execution plan

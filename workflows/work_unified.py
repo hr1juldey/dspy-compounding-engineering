@@ -172,6 +172,20 @@ def _run_react_todo(
                 # Mark todo complete in main repo (not worktree)
                 # Note: _mark_todo_complete uses absolute paths or relative to CWD (which is now main repo)
                 _mark_todo_complete(todo, result.resolution_summary)
+                
+                # Codify learnings from successful resolution
+                from utils.learning_extractor import codify_work_outcome
+                try:
+                    codify_work_outcome(
+                        todo_id=todo["id"],
+                        todo_slug=todo["slug"],
+                        resolution_summary=result.resolution_summary,
+                        operations_count=0,  # ReAct doesn't track operations count
+                        success=True
+                    )
+                except Exception:
+                    pass  # Don't fail resolution if codification fails
+                
                 return {
                     "todo_id": todo["id"],
                     "success": True,

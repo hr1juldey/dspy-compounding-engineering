@@ -1,6 +1,5 @@
 import os
 import subprocess
-import dspy
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.progress import Progress
@@ -18,6 +17,7 @@ from agents.review import (
     PatternRecognitionSpecialist,
 )
 from utils.todo_service import create_finding_todo
+from utils.kb_module import KBPredict
 
 console = Console()
 
@@ -187,7 +187,11 @@ def run_review(pr_url_or_id: str, project: bool = False):
 
     def run_single_agent(name, agent_cls, diff):
         try:
-            predictor = dspy.Predict(agent_cls)
+            # Use KB-augmented Predict to inject past learnings
+            predictor = KBPredict(
+                agent_cls,
+                kb_tags=["code-review", name.lower().replace(" ", "-")],
+            )
 
             return name, predictor(code_diff=diff)
         except Exception as e:
@@ -301,8 +305,6 @@ def run_review(pr_url_or_id: str, project: bool = False):
             )
             continue
 
-        lower_review = review_text.lower()
-
         # Get category and severity from agent
         category, severity = agent_categories.get(agent_name, ("code-review", "p2"))
 
@@ -379,6 +381,17 @@ def run_review(pr_url_or_id: str, project: bool = False):
             )
     else:
         console.print("[green]No actionable findings to create todos for.[/green]")
+
+    # Extract and codify learnings from the review
+    if findings:
+        from utils.learning_extractor import codify_review_findings
+        
+        try:
+            codify_review_findings(findings, len(created_todos))
+        except Exception as e:
+            console.print(
+                f"[yellow]⚠ Could not codify review learnings: {e}[/yellow]"
+            )
 
     # Cleanup worktree
     if worktree_path and os.path.exists(worktree_path):

@@ -6,13 +6,13 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Prompt
 from rich.table import Table
-import dspy
 from agents.workflow import TriageAgent
 import yaml
 import textwrap
 from filelock import FileLock
 import tempfile
 import frontmatter
+from utils.kb_module import KBPredict
 
 console = Console()
 
@@ -171,7 +171,11 @@ def run_triage():
         f"[bold]Found {len(pending_files)} pending items for triage.[/bold]\n"
     )
 
-    triage_predictor = dspy.Predict(TriageAgent)
+    # Initialize KB-augmented triage predictor
+    triage_predictor = KBPredict(
+        TriageAgent,
+        kb_tags=["triage", "code-review"],
+    )
 
     approved_count = 0
     skipped_count = 0
@@ -263,6 +267,17 @@ def run_triage():
                 )
                 approved_count += 1
                 approved_todos.append(new_filename)
+                
+                # Codify triage decision
+                from utils.learning_extractor import codify_triage_decision
+                try:
+                    codify_triage_decision(
+                        finding_content=content,
+                        decision="approved",
+                        proposed_solution=solution
+                    )
+                except Exception:
+                    pass  # Don't fail triage if codification fails
         elif choice == "complete":
             if "-pending-" in filename:
                 new_filename = filename.replace("-pending-", "-complete-")
@@ -402,6 +417,20 @@ def run_triage():
         console.print("\n[bold yellow]Skipped Items (Deleted):[/bold yellow]")
         for item in skipped_items:
             console.print(f"  • [dim]{item}[/dim]")
+
+    # Codify batch triage session learnings
+    if approved_count > 0 or skipped_count > 0:
+        from utils.learning_extractor import codify_batch_triage_session
+        
+        try:
+            codify_batch_triage_session(
+                approved_count=approved_count,
+                skipped_count=skipped_count,
+                total_count=total_items,
+                approved_todos=approved_todos
+            )
+        except Exception as e:
+            console.print(f"[dim yellow]⚠ Could not codify session: {e}[/dim yellow]")
 
     console.print("\n[bold]Next Steps:[/bold]")
     console.print("1. View approved todos:")

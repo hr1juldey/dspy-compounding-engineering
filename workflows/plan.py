@@ -7,7 +7,7 @@ from agents.research import (
     FrameworkDocsResearcher,
 )
 from agents.workflow import SpecFlowAnalyzer, PlanGenerator
-from utils.knowledge_base import KnowledgeBase
+from utils.kb_module import KBPredict
 
 console = Console()
 
@@ -126,52 +126,52 @@ def run_plan(feature_description: str):
         f"[dim]Found {len(file_listing.splitlines())} files/directories[/dim]"
     )
 
-    # Get knowledge base context
-    kb = KnowledgeBase()
-    kb_context = kb.get_context_string(query=feature_description)
-    if kb_context:
-        console.print("[dim]Found relevant past learnings.[/dim]")
-    else:
-        console.print("[dim]No relevant past learnings found.[/dim]")
-
     with console.status("Running Research Agents..."):
         # Parallel execution in theory, sequential here for simplicity
-        repo_research = dspy.Predict(RepoResearchAnalyst)(
+        repo_research = KBPredict(
+            RepoResearchAnalyst,
+            kb_tags=["planning", "repo-research"],
+        )(
             feature_description=feature_description,
             file_listings=file_listing,
             relevant_file_contents=relevant_contents,
         )
         console.print("[green]✓ Repo Research Complete[/green]")
 
-        best_practices = dspy.Predict(BestPracticesResearcher)(
+        best_practices = KBPredict(
+            BestPracticesResearcher,
+            kb_tags=["planning", "best-practices"],
+        )(
             topic=feature_description
         )
         console.print("[green]✓ Best Practices Research Complete[/green]")
 
-        framework_docs = dspy.Predict(
-            FrameworkDocsResearcher
+        framework_docs = KBPredict(
+            FrameworkDocsResearcher,
+            kb_tags=["planning", "framework-docs"],
         )(
-            framework_or_library=feature_description  # This might need extraction of keywords
+            framework_or_library=feature_description
         )
         console.print("[green]✓ Framework Docs Research Complete[/green]")
 
     research_summary = f"""
-    ## Repo Research
-    {repo_research.research_summary}
-    
-    ## Best Practices
-    {best_practices.research_findings}
-    
-    ## Framework Docs
-    {framework_docs.documentation_summary}
+        ## Repo Research
+        {repo_research.research_summary}
 
-    {kb_context}
+        ## Best Practices
+        {best_practices.research_findings}
+
+        ## Framework Docs
+        {framework_docs.documentation_summary}
     """
 
     # 2. SpecFlow Analysis
     console.rule("Phase 2: SpecFlow Analysis")
     with console.status("Analyzing User Flows..."):
-        spec_flow = dspy.Predict(SpecFlowAnalyzer)(
+        spec_flow = KBPredict(
+            SpecFlowAnalyzer,
+            kb_tags=["planning", "spec-flow"],
+        )(
             feature_description=feature_description, research_findings=research_summary
         )
     console.print("[green]✓ SpecFlow Analysis Complete[/green]")
@@ -179,7 +179,13 @@ def run_plan(feature_description: str):
     # 3. Plan Generation
     console.rule("Phase 3: Plan Generation")
     with console.status("Generating Plan..."):
-        plan_gen = dspy.Predict(PlanGenerator)(
+        # Use KB-augmented planning for better context
+        planner = KBPredict(
+            PlanGenerator,  # Changed from PlannerAgent to PlanGenerator to match original call structure
+            kb_tags=["planning", "architecture"],
+            kb_query=feature_description,
+        )
+        plan_gen = planner(
             feature_description=feature_description,
             research_summary=research_summary,
             spec_flow_analysis=spec_flow.flow_analysis,
