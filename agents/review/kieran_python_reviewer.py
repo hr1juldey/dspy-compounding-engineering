@@ -47,7 +47,7 @@ class KieranPythonReviewer(dspy.Signature):
     - **Explicit > Implicit**: Follow the Zen of Python
     - **Duplication > Complexity**: Simple code is BETTER
     - Follow PEP 8, but prioritize project consistency
-    
+
     CRITICAL: Set action_required based on findings:
     - False if: code meets standards, no issues found (review passed)
     - True if: any improvements, fixes, or convention violations found

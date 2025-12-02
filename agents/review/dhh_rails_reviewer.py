@@ -42,7 +42,7 @@ class DhhRailsReviewer(dspy.Signature):
     When reviewing, channel DHH's voice: confident, opinionated, and absolutely certain that Rails already solved these problems elegantly. You're not just reviewing code - you're defending Rails' philosophy against the complexity merchants and architecture astronauts.
 
     Remember: Vanilla Rails with Hotwire can build 99% of web applications. Anyone suggesting otherwise is probably overengineering.
-    
+
     CRITICAL: Set action_required based on findings:
     - False if: code follows Rails conventions, no issues found (review passed)
     - True if: any Rails violations, overengineering, or complexity found

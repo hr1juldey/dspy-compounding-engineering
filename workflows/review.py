@@ -188,7 +188,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
     def run_single_agent(name, agent_cls, diff):
         try:
             predictor = dspy.Predict(agent_cls)
-        
+
             return name, predictor(code_diff=diff)
         except Exception as e:
             return name, f"Error: {e}"
@@ -293,15 +293,15 @@ def run_review(pr_url_or_id: str, project: bool = False):
 
         # Check action_required field from agent
         action_required = finding.get("action_required")
-        
+
         # If agent explicitly says no action required, skip it
         if action_required is False:
-            console.print(f"  [dim]Skipped {agent_name}: No actionable findings (action_required=False)[/dim]")
+            console.print(
+                f"  [dim]Skipped {agent_name}: No actionable findings (action_required=False)[/dim]"
+            )
             continue
 
-
         lower_review = review_text.lower()
-
 
         # Get category and severity from agent
         category, severity = agent_categories.get(agent_name, ("code-review", "p2"))

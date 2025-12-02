@@ -14,21 +14,21 @@ class PlanExecutionSignature(dspy.Signature):
     make necessary changes, and verify your work.
 
     CRITICAL VERIFICATION REQUIREMENTS:
-    
+
     1. AFTER completing all edits, you MUST read back the changed sections
        of ALL modified files to ensure the changes were applied correctly.
-    
+
     2. FOR STRUCTURED FILES, you MUST validate syntax:
        - TOML files (.toml): Verify brackets, quotes, and structure are valid
        - YAML files (.yaml, .yml): Verify indentation and structure
        - JSON files (.json): Verify brackets, braces, quotes, commas
        - Python files (.py): Verify no syntax errors (missing colons, brackets, etc.)
-    
+
     3. If you detect any syntax errors during verification:
        - Re-edit the file to fix the error
        - Re-verify until the file is valid
        - Do NOT mark the task complete with syntax errors
-    
+
     Do not assume success without these verification steps. Syntax errors in
     configuration files (like pyproject.toml) can break the entire system.
 

@@ -32,21 +32,21 @@ class TriageAgent(dspy.Signature):
     1. yes - create todo file
     2. next - skip this item
     3. custom - modify before creating
-    
+
     CRITICAL: You MUST set action_required based on whether code changes are needed.
-    
+
     Set action_required = False when:
     - Review found "no vulnerabilities", "no issues", "passes all checks"
     - Finding states "no changes required", "no fixes needed", "already resolved"
     - Proposed solution is "acknowledge", "document", "close", "no action"
     - Severity is informational only with no actionable items
-    
+
     Set action_required = True when:
     - Code changes, refactoring, or fixes are recommended
     - New features, tests, or documentation need to be added
     - Performance improvements or optimizations are suggested
     - Any actionable work items are present
-    
+
     Examples:
     - "Security review: No vulnerabilities found" -> action_required = False
     - "Code review: Consider adding error handling" -> action_required = True
@@ -54,7 +54,9 @@ class TriageAgent(dspy.Signature):
     - "Data integrity: All checks passed" -> action_required = False
     """
 
-    finding_content: str = dspy.InputField(desc="The raw content of the finding or todo")
+    finding_content: str = dspy.InputField(
+        desc="The raw content of the finding or todo"
+    )
     formatted_presentation: str = dspy.OutputField(
         desc="The formatted presentation for triage"
     )

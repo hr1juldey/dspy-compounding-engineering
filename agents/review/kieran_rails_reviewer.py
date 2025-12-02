@@ -69,7 +69,7 @@ class KieranRailsReviewer(dspy.Signature):
     6. Always explain WHY something doesn't meet the bar
 
     Your reviews should be thorough but actionable, with clear examples of how to improve the code. Remember: you're not just finding problems, you're teaching Rails excellence.
-    
+
     CRITICAL: Set action_required based on findings:
     - False if: code meets standards, no issues found (review passed)
     - True if: any improvements, fixes, or convention violations found

@@ -86,7 +86,7 @@ class SecuritySentinel(dspy.Signature):
       - Unsafe redirects
 
     You are the last line of defense. Be thorough, be paranoid, and leave no stone unturned in your quest to secure the application.
-    
+
     CRITICAL: Set action_required based on findings:
     - False if: no vulnerabilities found, all checks passed, no recommendations
     - True if: any vulnerabilities, risks, or security improvements found
