@@ -67,7 +67,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ```bash
 # Clone repository
-git clone https://github.com/Dan-StrategicAutomation/dspy-compounding-engineering.git
+git clone https://github.com/Strategic-Automation/dspy-compounding-engineering.git
 cd dspy-compounding-engineering
 
 # Configure environment
