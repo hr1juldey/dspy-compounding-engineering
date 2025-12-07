@@ -9,8 +9,11 @@ WORKDIR /app
 # Copy dependency files first for caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (system-wide to avoid venv in container)
-RUN uv sync --frozen --system
+# Install dependencies (uv sync creates .venv by default)
+RUN uv sync --frozen
+
+# Place the virtual environment in the PATH
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy application code
 COPY . .
