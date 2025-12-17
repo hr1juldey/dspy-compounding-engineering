@@ -217,7 +217,7 @@ class KnowledgeBase:
                 f"[red]Error indexing learning {learning.get('id', 'unknown')}: {e}[/red]"
             )
 
-    def add_learning(self, learning: Dict[str, Any]) -> str:
+    def save_learning(self, learning: Dict[str, Any]) -> str:
         """
         Add a new learning item to the knowledge base.
 
@@ -263,7 +263,7 @@ class KnowledgeBase:
             console.print(f"[red]Failed to save learning: {e}[/red]")
             raise
 
-    def search_knowledge(
+    def retrieve_relevant(
         self, query: str = "", tags: List[str] = None, limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
@@ -363,7 +363,7 @@ class KnowledgeBase:
         """
         Get a formatted string of relevant learnings for context injection.
         """
-        learnings = self.search_knowledge(query, tags)
+        learnings = self.retrieve_relevant(query, tags)
         if not learnings:
             return "No relevant past learnings found."
 
@@ -434,7 +434,7 @@ class KnowledgeBase:
         """
         Search for similar patterns using vector embeddings.
         """
-        learnings = self.search_knowledge(query=description, limit=limit)
+        learnings = self.retrieve_relevant(query=description, limit=limit)
 
         results = []
         for learning in learnings:
