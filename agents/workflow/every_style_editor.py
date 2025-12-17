@@ -42,14 +42,13 @@ class EveryStyleEditor(dspy.Signature):
     - Avoid "We have"/"We get".
     - Avoid clichés/jargon.
     - "Two times faster" (not 2x, except 10x).
-    - Money: "$1 billion".
+    - Money: "£1 billion".
     - People: Identify by company/title.
     - Buttons: Sentence case.
     """
 
-    content_to_review = dspy.InputField(
-        desc="The text content (article, post, doc) to review."
-    )
+    content_to_review = dspy.InputField(desc="The text content (article, post, doc) to review.")
     style_edits = dspy.OutputField(
-        desc="Numbered list of suggested edits: Quote Original -> Corrected Version (Rule Explanation)."
+        desc="Numbered list of suggested edits: Quote Original -> Corrected Version "
+        "(Rule Explanation)."
     )

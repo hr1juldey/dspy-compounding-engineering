@@ -3,7 +3,8 @@ import dspy
 
 class PlanGenerator(dspy.Signature):
     """
-    Transform feature descriptions, bug reports, or improvement ideas into well-structured markdown files issues that follow project conventions and best practices.
+    Transform feature descriptions, bug reports, or improvement ideas into well-structured markdown
+    files issues that follow project conventions and best practices.
 
     **Goal:** Create a plan for a new feature or bug fix.
 

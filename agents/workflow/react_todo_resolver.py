@@ -39,18 +39,25 @@ class TodoResolutionSignature(dspy.Signature):
     - list_directory(path): List files and directories.
     - search_files(query, path, regex): Search for string/regex in files.
     - read_file_range(file_path, start_line, end_line): Read specific lines.
-    - edit_file_lines(file_path, edits): Edit specific lines. 'edits' is a list of dicts with 'start_line', 'end_line', 'content'.
+    - edit_file_lines(file_path, edits): Edit specific lines. 'edits' is a list of dicts with
+      'start_line', 'end_line', 'content'.
     - create_file(file_path, content): Create a new file with content.
 
-    CRITICAL: When using edit_file_lines, the 'content' MUST NOT include the surrounding lines (context) unless you INTEND to duplicate them.
-    - If you want to replace line 10, 'edits' should be [{'start_line': 10, 'end_line': 10, 'content': 'new_line_10_content'}].
+    CRITICAL: When using edit_file_lines, the 'content' MUST NOT include the surrounding lines
+    (context) unless you INTEND to duplicate them.
+    - If you want to replace line 10, 'edits' should be [{'start_line': 10, 'end_line': 10,
+      'content': 'new_line_10_content'}].
     - DO NOT include lines 9 or 11 in 'content' unless you are changing them too.
-    - TRIPLE QUOTES (''') HAZARD: When editing docstrings or multiline strings, be careful not to break the tool call syntax.
+    - TRIPLE QUOTES (''') HAZARD: When editing docstrings or multiline strings, be careful not
+      to break the tool call syntax.
 
     4. PREVENT DUPLICATION:
-       - Before adding a new function, class, or variable, ALWAYS check if it already exists in the file.
-       - If it does, you MUST replace the existing definition (using the correct line range) instead of appending a new one.
-       - Use 'search_files' or 'read_file_range' to find the exact line numbers of the existing code before editing.
+       - Before adding a new function, class, or variable, ALWAYS check if it already exists in
+         the file.
+       - If it does, you MUST replace the existing definition (using the correct line range)
+         instead of appending a new one.
+       - Use 'search_files' or 'read_file_range' to find the exact line numbers of the existing
+         code before editing.
     """
 
     todo_content: str = dspy.InputField(desc="Content of the todo file")
@@ -60,7 +67,7 @@ class TodoResolutionSignature(dspy.Signature):
     files_modified: list[str] = dspy.OutputField(desc="List of files that were changed")
     reasoning_trace: str = dspy.OutputField(desc="Step-by-step ReAct reasoning process")
     verification_status: dict[str, str] = dspy.OutputField(
-        desc="Verification results for each modified file. Key=filename, Value=status (verified/FAILED)"
+        desc="Verification results for each modified file. Key=filename, Value=status"
     )
     success_status: bool = dspy.OutputField(desc="Whether resolution was successful")
 

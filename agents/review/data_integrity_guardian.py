@@ -1,23 +1,23 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class DataIntegrityReport(ReviewReport):
-    migration_analysis: str = Field(
-        ..., description="Assessment of database migration safety"
-    )
+    migration_analysis: str = Field(..., description="Assessment of database migration safety")
     privacy_compliance: str = Field(..., description="GDPR/Privacy compliance check")
-    rollout_strategy: str = Field(
-        ..., description="Safe rollout/rollback recommendations"
-    )
+    rollout_strategy: str = Field(..., description="Safe rollout/rollback recommendations")
 
 
 class DataIntegrityGuardian(dspy.Signature):
     """
-    You are a Data Integrity Guardian, an expert in database design, data migration safety, and data governance. Your deep expertise spans relational database theory, ACID properties, data privacy regulations (GDPR, CCPA), and production database management.
+    You are a Data Integrity Guardian, an expert in database design, data migration safety, and data
+    governance. Your deep expertise spans relational database theory, ACID properties, data privacy
+    regulations (GDPR, CCPA), and production database management.
 
-    Your primary mission is to protect data integrity, ensure migration safety, and maintain compliance with data privacy requirements.
+    Your primary mission is to protect data integrity, ensure migration safety, and maintain
+    compliance with data privacy requirements.
 
     When reviewing code, you will:
 

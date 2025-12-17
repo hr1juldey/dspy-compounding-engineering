@@ -21,16 +21,12 @@ def validate_path(path: str, base_dir: str = ".") -> str:
 
     # Ensure the resolved path is within the base directory
     if not full_path.startswith(base_abs + os.sep) and full_path != base_abs:
-        raise ValueError(
-            f"Path outside base directory (traversal detected): {path} -> {full_path}"
-        )
+        raise ValueError(f"Path outside base directory (traversal detected): {path} -> {full_path}")
 
     return full_path
 
 
-def safe_write(
-    file_path: str, content: str, base_dir: str = ".", overwrite: bool = True
-) -> None:
+def safe_write(file_path: str, content: str, base_dir: str = ".", overwrite: bool = True) -> None:
     """
     Safely write content to file within base_dir.
     If overwrite is False and file exists, raises FileExistsError.
@@ -78,9 +74,7 @@ def skip_ai_commands(
 ) -> None:
     """Log and skip AI-generated commands."""
     if commands:
-        console.print(
-            f"[bold yellow]{reason}: {len(commands)} command(s) skipped[/bold yellow]"
-        )
+        console.print(f"[bold yellow]{reason}: {len(commands)} command(s) skipped[/bold yellow]")
         for cmd in commands[:3]:  # Show first few
             console.print(f"  - {cmd}")
         if len(commands) > 3:

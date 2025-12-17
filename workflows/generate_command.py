@@ -56,9 +56,7 @@ def _get_existing_agents() -> str:
                     # Convert to class name format
                     class_name = "".join(word.title() for word in agent_name.split("_"))
                     category = agent_dir.split("/")[-1]
-                    agents.append(
-                        f"- {class_name} ({category}): {agent_dir}/{filename}"
-                    )
+                    agents.append(f"- {class_name} ({category}): {agent_dir}/{filename}")
 
     return "\n".join(agents) if agents else "No existing agents found."
 
@@ -88,7 +86,7 @@ def _get_project_structure() -> str:
     return "\n".join(structure_parts)
 
 
-def run_generate_command(description: str, dry_run: bool = False):
+def run_generate_command(description: str, dry_run: bool = False):  # noqa: C901
     """
     Generate a new CLI command from a natural language description.
 
@@ -113,12 +111,8 @@ def run_generate_command(description: str, dry_run: bool = False):
         project_structure = _get_project_structure()
 
     console.print("[green]✓ Context gathered[/green]")
-    console.print(
-        f"[dim]Found {len(existing_commands.splitlines())} existing commands[/dim]"
-    )
-    console.print(
-        f"[dim]Found {len(existing_agents.splitlines())} existing agents[/dim]"
-    )
+    console.print(f"[dim]Found {len(existing_commands.splitlines())} existing commands[/dim]")
+    console.print(f"[dim]Found {len(existing_agents.splitlines())} existing agents[/dim]")
 
     # Phase 2: Generate command specification
     console.rule("[bold]Phase 2: Command Generation[/bold]")
@@ -136,9 +130,7 @@ def run_generate_command(description: str, dry_run: bool = False):
         # Get typed result
         command_spec_obj = result.command_spec
         if not command_spec_obj:
-            console.print(
-                "[red]Agent failed to return a valid command specification.[/red]"
-            )
+            console.print("[red]Agent failed to return a valid command specification.[/red]")
             return None
 
         # Convert Pydantic to dict for existing display logic
@@ -179,11 +171,7 @@ def run_generate_command(description: str, dry_run: bool = False):
     if agents_needed:
         console.print("\n[bold]Agents:[/bold]")
         for agent in agents_needed:
-            status = (
-                "[green]exists[/green]"
-                if agent.get("exists")
-                else "[yellow]new[/yellow]"
-            )
+            status = "[green]exists[/green]" if agent.get("exists") else "[yellow]new[/yellow]"
             console.print(f"  • {agent['name']} ({status}): {agent['purpose']}")
 
     # Files to create
@@ -279,9 +267,7 @@ def run_generate_command(description: str, dry_run: bool = False):
     console.print("\n[bold]Next Steps:[/bold]")
     console.print("1. Review the generated code")
     console.print("2. Add the CLI registration to cli.py:")
-    console.print(
-        f"   [cyan]{cli_code.split(chr(10))[0] if cli_code else 'See above'}[/cyan]"
-    )
+    console.print(f"   [cyan]{cli_code.split(chr(10))[0] if cli_code else 'See above'}[/cyan]")
     console.print("3. Update __init__.py if new agents were created")
     console.print("4. Test the new command")
 

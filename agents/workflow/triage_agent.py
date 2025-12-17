@@ -3,7 +3,8 @@ import dspy
 
 class TriageAgent(dspy.Signature):
     """
-    You are a Triage System. Your goal is to present findings, decisions, or issues one by one for triage.
+    You are a Triage System. Your goal is to present findings, decisions, or issues one by one for
+    triage.
 
     For the given finding content, present it in the following format:
 
@@ -54,15 +55,12 @@ class TriageAgent(dspy.Signature):
     - "Data integrity: All checks passed" -> action_required = False
     """
 
-    finding_content: str = dspy.InputField(
-        desc="The raw content of the finding or todo"
-    )
-    formatted_presentation: str = dspy.OutputField(
-        desc="The formatted presentation for triage"
-    )
+    finding_content: str = dspy.InputField(desc="The raw content of the finding or todo")
+    formatted_presentation: str = dspy.OutputField(desc="The formatted presentation for triage")
     proposed_solution: str = dspy.OutputField(
         desc="The specific proposed solution or recommended action to be taken"
     )
     action_required: bool = dspy.OutputField(
-        desc="False if no code changes needed (review passed, no issues), True if action/changes required"
+        desc="False if no code changes needed (review passed, no issues), "
+        "True if action/changes required"
     )

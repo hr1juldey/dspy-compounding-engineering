@@ -11,7 +11,8 @@ class KnowledgeGardener(dspy.Signature):
     ## Gardening Protocol
 
     1. **Consolidate Duplicates**: Merge similar learnings into a single, robust entry.
-    2. **Remove Noise**: Discard one-off, trivial, or highly context-specific items that don't generalize.
+    2. **Remove Noise**: Discard one-off, trivial, or highly context-specific items that don't
+       generalize.
     3. **Refine Clarity**: Rewrite entries to be concise, actionable, and clear.
     4. **Categorize**: Ensure every entry is correctly categorized.
     5. **Identify Patterns**: Look for underlying themes across multiple entries.

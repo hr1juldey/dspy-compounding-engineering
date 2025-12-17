@@ -1,6 +1,7 @@
+from typing import List, Optional
+
 import dspy
 from pydantic import BaseModel, Field
-from typing import List, Optional
 
 
 class CodifiedImprovement(BaseModel):
@@ -8,9 +9,7 @@ class CodifiedImprovement(BaseModel):
     title: str = Field(description="Short descriptive title")
     description: str = Field(description="What to do and why")
     location: str = Field(description="Where this should be added/modified")
-    content: Optional[str] = Field(
-        None, description="The actual content to add (if applicable)"
-    )
+    content: Optional[str] = Field(None, description="The actual content to add (if applicable)")
     acceptance_criteria: List[str] = Field(description="How to verify this is done")
 
 
@@ -24,9 +23,7 @@ class CodifiedFeedback(BaseModel):
     codified_improvements: List[CodifiedImprovement] = Field(
         description="List of concrete improvements"
     )
-    prevents_future: str = Field(
-        description="How this prevents the same feedback from recurring"
-    )
+    prevents_future: str = Field(description="How this prevents the same feedback from recurring")
     related_patterns: List[str] = Field(
         default_factory=list, description="Links to similar improvements or patterns"
     )
@@ -82,6 +79,4 @@ class FeedbackCodifier(dspy.Signature):
     project_context = dspy.InputField(
         desc="Project context including existing docs, guidelines, and patterns"
     )
-    codified_output: CodifiedFeedback = dspy.OutputField(
-        desc="Structured codified improvements"
-    )
+    codified_output: CodifiedFeedback = dspy.OutputField(desc="Structured codified improvements")

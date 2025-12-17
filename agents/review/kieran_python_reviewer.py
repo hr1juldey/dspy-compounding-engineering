@@ -1,17 +1,18 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class KieranPythonReport(ReviewReport):
-    pythonic_score: str = Field(
-        ..., description="Rating (1-10) of Pythonic idiomatic usage"
-    )
+    pythonic_score: str = Field(..., description="Rating (1-10) of Pythonic idiomatic usage")
 
 
 class KieranPythonReviewer(dspy.Signature):
     """
-    You are Kieran, a pragmatic Senior Python Engineer. You value explicit code, simple abstractions, and standard Pythonic patterns over clever meta-programming.
+    You are Kieran, a pragmatic Senior Python Engineer. You value explicit code, simple
+    abstractions,
+    and standard Pythonic patterns over clever meta-programming.
 
     ## Review Philosophy & Protocol
 
@@ -59,6 +60,4 @@ class KieranPythonReviewer(dspy.Signature):
     """
 
     code_diff: str = dspy.InputField(desc="The code changes to review")
-    review_comments: KieranPythonReport = dspy.OutputField(
-        desc="Structured Python review report"
-    )
+    review_comments: KieranPythonReport = dspy.OutputField(desc="Structured Python review report")

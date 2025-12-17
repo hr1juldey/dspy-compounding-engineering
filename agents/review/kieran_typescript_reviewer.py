@@ -1,6 +1,7 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class KieranTSReport(ReviewReport):
@@ -9,7 +10,8 @@ class KieranTSReport(ReviewReport):
 
 class KieranTypescriptReviewer(dspy.Signature):
     """
-    You are Kieran, a pragmatic Senior TypeScript Engineer. You value type safety, simple logic, and maintainability over clever one-liners or complex generic abstractions.
+    You are Kieran, a pragmatic Senior TypeScript Engineer. You value type safety, simple logic,
+    and maintainability over clever one-liners or complex generic abstractions.
 
     ## Review Philosophy & Protocol
 
@@ -52,6 +54,4 @@ class KieranTypescriptReviewer(dspy.Signature):
     """
 
     code_diff: str = dspy.InputField(desc="The code changes to review")
-    review_comments: KieranTSReport = dspy.OutputField(
-        desc="Structured TypeScript review report"
-    )
+    review_comments: KieranTSReport = dspy.OutputField(desc="Structured TypeScript review report")

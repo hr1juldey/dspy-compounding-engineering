@@ -1,4 +1,5 @@
 from typing import List, Optional
+
 import dspy
 from pydantic import BaseModel, Field
 
@@ -24,15 +25,9 @@ class TestNeeded(BaseModel):
 
 class TaskValidation(BaseModel):
     is_valid: bool = Field(..., description="Overall valid status")
-    criteria_status: List[CriterionStatus] = Field(
-        ..., description="Status of each criterion"
-    )
-    issues: List[ValidationIssue] = Field(
-        default_factory=list, description="Found issues"
-    )
-    tests_needed: List[TestNeeded] = Field(
-        default_factory=list, description="Missing tests"
-    )
+    criteria_status: List[CriterionStatus] = Field(..., description="Status of each criterion")
+    issues: List[ValidationIssue] = Field(default_factory=list, description="Found issues")
+    tests_needed: List[TestNeeded] = Field(default_factory=list, description="Missing tests")
     ready_to_commit: bool = Field(..., description="Ready for safe commit")
     summary: str = Field(..., description="Overall validation summary")
 
@@ -53,10 +48,6 @@ class TaskValidator(dspy.Signature):
     task_acceptance_criteria: str = dspy.InputField(
         desc="The acceptance criteria to validate against"
     )
-    implementation_changes: str = dspy.InputField(
-        desc="The code changes that were made"
-    )
+    implementation_changes: str = dspy.InputField(desc="The code changes that were made")
     test_output: str = dspy.InputField(desc="Output from running tests, if available")
-    validation_result: TaskValidation = dspy.OutputField(
-        desc="Structured validation results"
-    )
+    validation_result: TaskValidation = dspy.OutputField(desc="Structured validation results")

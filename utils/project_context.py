@@ -45,11 +45,7 @@ class ProjectContext:
                 except Exception:
                     pass
 
-        return (
-            "\n".join(context_parts)
-            if context_parts
-            else "No project context available"
-        )
+        return "\n".join(context_parts) if context_parts else "No project context available"
 
     def gather_project_files(self, max_file_size: int = 50000) -> str:
         """
@@ -94,24 +90,31 @@ class ProjectContext:
             ".ruff_cache",
         }
 
+        # Files to skip
+        skip_files = {
+            "uv.lock",
+            "package-lock.json",
+            "yarn.lock",
+            "poetry.lock",
+            "Gemfile.lock",
+        }
+
         for root, dirs, files in os.walk(self.base_dir):
             # Filter out skip directories
             dirs[:] = [d for d in dirs if d not in skip_dirs]
 
             for filename in files:
+                if filename in skip_files:
+                    continue
                 ext = os.path.splitext(filename)[1].lower()
                 if ext in code_extensions or ext in config_extensions:
                     filepath = os.path.join(root, filename)
                     try:
-                        with open(
-                            filepath, "r", encoding="utf-8", errors="ignore"
-                        ) as f:
+                        with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                             content = f.read()
                             # Skip very large files
                             if len(content) > max_file_size:
-                                content = (
-                                    content[:max_file_size] + "\n...[truncated]..."
-                                )
+                                content = content[:max_file_size] + "\n...[truncated]..."
                             project_content.append(f"=== {filepath} ===\n{content}\n")
                     except Exception:
                         pass

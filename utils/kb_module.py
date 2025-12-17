@@ -65,5 +65,10 @@ class KBPredict(dspy.Module):
     def _format_kb_injection(self, kb_context: str, original_input: str) -> str:
         separator = "\n\n" + "=" * 80 + "\n\n"
 
-        formatted = f"""## Past Learnings (Auto-Injected from Knowledge Base)\n\nThe following patterns and learnings have been codified from past work.\nApply these automatically when relevant to the current task:\n\n{kb_context}\n\n{separator}\n\n## Current Task\n\n{original_input}"""
+        formatted = (
+            "## Past Learnings (Auto-Injected from Knowledge Base)\n\n"
+            "The following patterns and learnings have been codified from past work.\n"
+            f"Apply these automatically when relevant to the current task:\n\n{kb_context}\n\n"
+            f"{separator}\n\n## Current Task\n\n{original_input}"
+        )
         return formatted

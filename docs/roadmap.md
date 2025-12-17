@@ -20,9 +20,9 @@ Focus on robustness, testing, and basic GitHub connectivity.
 ### v1.2: Enhanced Intelligence & Connectivity
 Making the system smarter and more connected to the ecosystem.
 - [ ] **MCP Integration** (#9): Implement Model Context Protocol for standardized tool access.
-- [ ] **Vector Embeddings** (#8): Semantically indexed Knowledge Base (ChromaDB/Qdrant).
+- [x] **Vector Embeddings** (#8): Semantically indexed Knowledge Base (ChromaDB/Qdrant).
 - [ ] **Smart Context** (#11): Context gathering with semantic filtering.
-- [ ] **Knowledge Gardening** (#19): Agent for refining and compressing the Knowledge Base.
+- [x] **Knowledge Gardening** (#19): Agent for refining and compressing the Knowledge Base.
 - [ ] **Auto-Triage** (#14, #6): Pattern-based auto-approval/rejection of findings.
 
 ### v2.0: Deep Compounding & Analytics

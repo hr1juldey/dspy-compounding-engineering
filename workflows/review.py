@@ -1,15 +1,15 @@
 import os
 import subprocess
 
+from pydantic import BaseModel
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.progress import Progress
 from rich.table import Table
-from pydantic import BaseModel
 
 from agents.review import (
-    ArchitectureStrategist,
     AgentNativeReviewer,
+    ArchitectureStrategist,
     CodeSimplicityReviewer,
     DataIntegrityGuardian,
     DhhRailsReviewer,
@@ -28,7 +28,7 @@ from utils.todo_service import create_finding_todo
 console = Console()
 
 
-def convert_pydantic_to_markdown(model: BaseModel) -> str:
+def convert_pydantic_to_markdown(model: BaseModel) -> str:  # noqa: C901
     """
     Convert any Pydantic model into a structured markdown report.
     Auto-detects findings lists and summary fields.
@@ -88,7 +88,7 @@ def convert_pydantic_to_markdown(model: BaseModel) -> str:
     return "\n".join(parts)
 
 
-def run_review(pr_url_or_id: str, project: bool = False):
+def run_review(pr_url_or_id: str, project: bool = False):  # noqa: C901
     """
     Perform exhaustive multi-agent code review.
 
@@ -137,9 +137,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
             # Create isolated worktree for PR
             try:
                 # Sanitize ID for path
-                safe_id = "".join(
-                    c for c in pr_url_or_id if c.isalnum() or c in ("-", "_")
-                )
+                safe_id = "".join(c for c in pr_url_or_id if c.isalnum() or c in ("-", "_"))
                 worktree_path = f"worktrees/review-{safe_id}"
 
                 if os.path.exists(worktree_path):
@@ -147,14 +145,13 @@ def run_review(pr_url_or_id: str, project: bool = False):
                         f"[yellow]Worktree {worktree_path} already exists. Using it.[/yellow]"
                     )
                 else:
-                    console.print(
-                        f"[cyan]Creating isolated worktree at {worktree_path}...[/cyan]"
-                    )
+                    console.print(f"[cyan]Creating isolated worktree at {worktree_path}...[/cyan]")
                     GitService.checkout_pr_worktree(pr_url_or_id, worktree_path)
                     console.print("[green]✓ Worktree created[/green]")
             except Exception as e:
                 console.print(
-                    f"[yellow]Warning: Could not create worktree (proceeding with diff only): {e}[/yellow]"
+                    "[yellow]Warning: Could not create worktree (proceeding with diff only): "
+                    f"{e}[/yellow]"
                 )
 
         if not code_diff:
@@ -165,16 +162,15 @@ def run_review(pr_url_or_id: str, project: bool = False):
         MAX_DIFF_SIZE = 50000
         if len(code_diff) > MAX_DIFF_SIZE:
             console.print(
-                f"[yellow]Warning: Content is very large ({len(code_diff)} chars). Truncating to {MAX_DIFF_SIZE}...[/yellow]"
+                f"[yellow]Warning: Content is very large ({len(code_diff)} chars). "
+                f"Truncating to {MAX_DIFF_SIZE}...[/yellow]"
             )
             code_diff = code_diff[:MAX_DIFF_SIZE] + "\n...[truncated]..."
 
     except Exception as e:
         console.print(f"[red]Error fetching content: {e}[/red]")
         # Fallback for demo purposes if git fails
-        console.print(
-            "[yellow]Falling back to placeholder diff for demonstration...[/yellow]"
-        )
+        console.print("[yellow]Falling back to placeholder diff for demonstration...[/yellow]")
         code_diff = """
         # Placeholder diff (Git fetch failed)
         # Ensure git and gh CLI are installed and configured
@@ -213,9 +209,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
             return name, f"Error: {e}"
 
     with Progress() as progress:
-        task = progress.add_task(
-            "[cyan]Running agents in parallel...", total=len(review_agents)
-        )
+        task = progress.add_task("[cyan]Running agents in parallel...", total=len(review_agents))
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
             # Submit all tasks
@@ -239,7 +233,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
                     review_text = None
                     action_required_val = None
                     report_data = None
-                    report_obj = None # Keep track for attribute access if needed
+                    report_obj = None  # Keep track for attribute access if needed
 
                     # 1. Attempt to find the report data (model or dict)
                     if hasattr(result, "model_dump"):
@@ -250,10 +244,16 @@ def run_review(pr_url_or_id: str, project: bool = False):
                     else:
                         # Scan common output fields for the report model
                         for field_name in [
-                            "review_comments", "security_report", "performance_analysis", 
-                            "architecture_analysis", "data_integrity_report", 
-                            "pattern_analysis", "simplification_analysis", "dhh_review",
-                            "agent_native_analysis", "race_condition_analysis"
+                            "review_comments",
+                            "security_report",
+                            "performance_analysis",
+                            "architecture_analysis",
+                            "data_integrity_report",
+                            "pattern_analysis",
+                            "simplification_analysis",
+                            "dhh_review",
+                            "agent_native_analysis",
+                            "race_condition_analysis",
                         ]:
                             if hasattr(result, field_name):
                                 val = getattr(result, field_name)
@@ -264,21 +264,21 @@ def run_review(pr_url_or_id: str, project: bool = False):
                                 elif isinstance(val, dict):
                                     report_data = val
                                     break
-                    
+
                     # 2. Render the report if found
                     if report_data:
                         data = report_data
                         parts = []
-                        
+
                         # A. Standard Sections
                         if "summary" in data:
                             parts.append(f"# Summary\n\n{data['summary']}\n")
                         elif "executive_summary" in data:
-                             parts.append(f"# Summary\n\n{data['executive_summary']}\n")
+                            parts.append(f"# Summary\n\n{data['executive_summary']}\n")
 
                         if "analysis" in data:
                             parts.append(f"## Analysis\n\n{data['analysis']}\n")
-                        
+
                         if "findings" in data and isinstance(data["findings"], list):
                             found_list = data["findings"]
                             if found_list:
@@ -297,7 +297,13 @@ def run_review(pr_url_or_id: str, project: bool = False):
                                     parts.append("")
 
                         # B. Unique/Extra Sections
-                        captured_keys = {"summary", "executive_summary", "analysis", "findings", "action_required"}
+                        captured_keys = {
+                            "summary",
+                            "executive_summary",
+                            "analysis",
+                            "findings",
+                            "action_required",
+                        }
                         for key, value in data.items():
                             if key in captured_keys:
                                 continue
@@ -307,6 +313,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
                                 parts.append(f"## {title}\n\n{value}\n")
                             elif isinstance(value, (dict, list)):
                                 import json
+
                                 title = key.replace("_", " ").title()
                                 try:
                                     json_str = json.dumps(value, indent=2)
@@ -321,8 +328,8 @@ def run_review(pr_url_or_id: str, project: bool = False):
                         # Try to get action_required from dict or object
                         action_required_val = data.get("action_required")
                         if action_required_val is None and report_obj:
-                             action_required_val = getattr(report_obj, "action_required", None)
-                    
+                            action_required_val = getattr(report_obj, "action_required", None)
+
                     # 3. Fallback
                     else:
                         review_text = str(result)
@@ -334,9 +341,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
                         findings.append(finding_data)
 
                 except Exception as e:
-                    findings.append(
-                        {"agent": agent_name, "review": f"Execution failed: {e}"}
-                    )
+                    findings.append({"agent": agent_name, "review": f"Execution failed: {e}"})
 
     console.rule("Review Complete")
 
@@ -429,9 +434,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
             else:
                 p3_count += 1
 
-            console.print(
-                f"  [green]✓[/green] Created: [cyan]{os.path.basename(todo_path)}[/cyan]"
-            )
+            console.print(f"  [green]✓[/green] Created: [cyan]{os.path.basename(todo_path)}[/cyan]")
         except Exception as e:
             console.print(f"  [red]✗ Failed to create todo for {agent_name}: {e}[/red]")
 
@@ -463,13 +466,9 @@ def run_review(pr_url_or_id: str, project: bool = False):
         if p1_count:
             console.print(f"  [red]🔴 CRITICAL (P1): {p1_count} - BLOCKS MERGE[/red]")
         if p2_count:
-            console.print(
-                f"  [yellow]🟡 IMPORTANT (P2): {p2_count} - Should Fix[/yellow]"
-            )
+            console.print(f"  [yellow]🟡 IMPORTANT (P2): {p2_count} - Should Fix[/yellow]")
         if p3_count:
-            console.print(
-                f"  [blue]🔵 NICE-TO-HAVE (P3): {p3_count} - Enhancements[/blue]"
-            )
+            console.print(f"  [blue]🔵 NICE-TO-HAVE (P3): {p3_count} - Enhancements[/blue]")
     else:
         console.print("[green]No actionable findings to create todos for.[/green]")
 
@@ -498,6 +497,4 @@ def run_review(pr_url_or_id: str, project: bool = False):
     console.print("\n[bold]Next Steps:[/bold]")
     console.print("1. View pending todos: [cyan]ls todos/*-pending-*.md[/cyan]")
     console.print("2. Triage findings: [cyan]python cli.py triage[/cyan]")
-    console.print(
-        "3. Work on approved items: [cyan]python cli.py work <plan_file>[/cyan]"
-    )
+    console.print("3. Work on approved items: [cyan]python cli.py work <plan_file>[/cyan]")

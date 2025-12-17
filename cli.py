@@ -3,13 +3,13 @@ from typing import Optional
 import typer
 
 from config import configure_dspy
+from utils.knowledge_base import KnowledgeBase
 from workflows.codify import run_codify
 from workflows.generate_command import run_generate_command
 from workflows.plan import run_plan
 from workflows.review import run_review
 from workflows.triage import run_triage
 from workflows.work import run_unified_work
-from utils.knowledge_base import KnowledgeBase
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
@@ -40,9 +40,7 @@ def plan(feature_description: str):
 
 @app.command()
 def work(
-    pattern: Optional[str] = typer.Argument(
-        None, help="Todo ID, plan file, or pattern"
-    ),
+    pattern: Optional[str] = typer.Argument(None, help="Todo ID, plan file, or pattern"),
     dry_run: bool = typer.Option(False, "--dry-run", "-n", help="Dry run mode"),
     sequential: bool = typer.Option(
         False,
@@ -137,9 +135,7 @@ def generate_command(
 
 @app.command()
 def codify(
-    feedback: str = typer.Argument(
-        ..., help="The feedback, instruction, or learning to codify"
-    ),
+    feedback: str = typer.Argument(..., help="The feedback, instruction, or learning to codify"),
     source: str = typer.Option(
         "manual_input",
         "--source",
@@ -163,9 +159,7 @@ def codify(
 
 @app.command()
 def compress_kb(
-    ratio: float = typer.Option(
-        0.5, "--ratio", "-r", help="Target compression ratio (0.0 to 1.0)"
-    ),
+    ratio: float = typer.Option(0.5, "--ratio", "-r", help="Target compression ratio (0.0 to 1.0)"),
     dry_run: bool = typer.Option(
         False, "--dry-run", "-n", help="Show stats without modifying the file"
     ),

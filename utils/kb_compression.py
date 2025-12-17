@@ -1,11 +1,13 @@
-import dspy
 import os
 from typing import List
+
+import dspy
 
 
 class CompressMarkdown(dspy.Signature):
     """
-    Compress the given markdown content while preserving its structure, key details, and technical accuracy.
+    Compress the given markdown content while preserving its structure, key details,
+    and technical accuracy.
     Reduce the length by approximately the target ratio (e.g., 0.5 means 50% size).
     Retain all headers, code blocks, and list structures where possible.
     """

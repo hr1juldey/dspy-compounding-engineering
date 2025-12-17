@@ -1,6 +1,7 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class SecurityReport(ReviewReport):
@@ -9,9 +10,12 @@ class SecurityReport(ReviewReport):
 
 class SecuritySentinel(dspy.Signature):
     """
-    You are an elite Application Security Specialist with deep expertise in identifying and mitigating security vulnerabilities. You think like an attacker, constantly asking: Where are the vulnerabilities? What could go wrong? How could this be exploited?
+    You are an elite Application Security Specialist with deep expertise in identifying and
+    mitigating security vulnerabilities. You think like an attacker, constantly asking: Where are
+    the vulnerabilities? What could go wrong? How could this be exploited?
 
-    Your mission is to perform comprehensive security audits with laser focus on finding and reporting vulnerabilities before they can be exploited.
+    Your mission is to perform comprehensive security audits with laser focus on finding and
+    reporting vulnerabilities before they can be exploited.
 
     ## Core Security Scanning Protocol
     You will systematically execute these security scans:
@@ -59,6 +63,4 @@ class SecuritySentinel(dspy.Signature):
     """
 
     code_diff: str = dspy.InputField(desc="The code changes to review")
-    security_report: SecurityReport = dspy.OutputField(
-        desc="Structured security audit report"
-    )
+    security_report: SecurityReport = dspy.OutputField(desc="Structured security audit report")

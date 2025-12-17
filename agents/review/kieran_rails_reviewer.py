@@ -1,17 +1,17 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class KieranReport(ReviewReport):
-    convention_score: str = Field(
-        ..., description="Rating (1-10) of Rails convention adherence"
-    )
+    convention_score: str = Field(..., description="Rating (1-10) of Rails convention adherence")
 
 
 class KieranRailsReviewer(dspy.Signature):
     """
-    You are Kieran, a pragmatic Senior Engineer who loves Ruby on Rails. You believe in standard Rails patterns, simple code, and getting things done.
+    You are Kieran, a pragmatic Senior Engineer who loves Ruby on Rails. You believe in standard
+    Rails patterns, simple code, and getting things done.
 
     ## Review Philosophy & Protocol
 

@@ -1,7 +1,7 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
-import dspy
 
+import dspy
+from pydantic import BaseModel, Field
 
 # Models for TodoResolver
 
@@ -12,17 +12,13 @@ class FileOperation(BaseModel):
     content: Optional[str] = Field(
         None, description="Full file content for create/modify, or null for delete"
     )
-    changes_description: str = Field(
-        ..., description="Description of what was changed and why"
-    )
+    changes_description: str = Field(..., description="Description of what was changed and why")
 
 
 class TodoResolution(BaseModel):
     summary: str = Field(..., description="Brief description of the fix")
     analysis: str = Field(..., description="Understanding of the issue and approach")
-    operations: List[FileOperation] = Field(
-        ..., description="List of file operations to perform"
-    )
+    operations: List[FileOperation] = Field(..., description="List of file operations to perform")
     commands: List[str] = Field(
         default_factory=list, description="Shell commands to run (e.g., tests)"
     )
@@ -43,19 +39,11 @@ class TodoResolver(dspy.Signature):
     4. Generate Implementation (clean code, tests).
     """
 
-    todo_content: str = dspy.InputField(
-        desc="The full content of the todo markdown file"
-    )
+    todo_content: str = dspy.InputField(desc="The full content of the todo markdown file")
     todo_id: str = dspy.InputField(desc="The unique identifier of the todo")
-    affected_files_content: str = dspy.InputField(
-        desc="Content of files mentioned in the todo"
-    )
-    project_context: str = dspy.InputField(
-        desc="General project context and conventions"
-    )
-    resolution_plan: TodoResolution = dspy.OutputField(
-        desc="Structured resolution plan"
-    )
+    affected_files_content: str = dspy.InputField(desc="Content of files mentioned in the todo")
+    project_context: str = dspy.InputField(desc="General project context and conventions")
+    resolution_plan: TodoResolution = dspy.OutputField(desc="Structured resolution plan")
 
 
 # Models for TodoDependencyAnalyzer
@@ -64,13 +52,9 @@ class TodoResolver(dspy.Signature):
 class ExecutionBatch(BaseModel):
     batch: int = Field(..., description="Batch number (1-based)")
     todos: List[str] = Field(..., description="List of todo IDs in this batch")
-    can_parallel: bool = Field(
-        ..., description="Whether these todos can be run in parallel"
-    )
+    can_parallel: bool = Field(..., description="Whether these todos can be run in parallel")
     reason: str = Field(..., description="Reason for grouping/ordering")
-    depends_on_batch: Optional[int] = Field(
-        None, description="Batch number this depends on"
-    )
+    depends_on_batch: Optional[int] = Field(None, description="Batch number this depends on")
 
 
 class ExecutionPlan(BaseModel):
@@ -94,9 +78,7 @@ class TodoDependencyAnalyzer(dspy.Signature):
     3. Generate Execution Plan (batches, complexity).
     """
 
-    todos_summary: str = dspy.InputField(
-        desc="JSON summary of all todos with their metadata"
-    )
+    todos_summary: str = dspy.InputField(desc="JSON summary of all todos with their metadata")
     execution_plan: ExecutionPlan = dspy.OutputField(
         desc="Structured execution plan with batches and diagram"
     )

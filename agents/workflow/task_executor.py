@@ -1,6 +1,7 @@
 from typing import List, Optional
-from pydantic import BaseModel, Field
+
 import dspy
+from pydantic import BaseModel, Field
 
 
 class FileOperation(BaseModel):
@@ -9,23 +10,17 @@ class FileOperation(BaseModel):
     content: Optional[str] = Field(
         None, description="Full file content for create, or null for delete"
     )
-    changes_description: str = Field(
-        ..., description="Description of what was changed and why"
-    )
+    changes_description: str = Field(..., description="Description of what was changed and why")
 
 
 class TaskExecution(BaseModel):
     summary: str = Field(..., description="Brief description of changes made")
-    operations: List[FileOperation] = Field(
-        ..., description="List of file operations to perform"
-    )
+    operations: List[FileOperation] = Field(..., description="List of file operations to perform")
     commands: List[str] = Field(
         default_factory=list,
         description="Shell commands to run (e.g., migrations, installs)",
     )
-    next_steps: List[str] = Field(
-        default_factory=list, description="Follow-up actions needed"
-    )
+    next_steps: List[str] = Field(default_factory=list, description="Follow-up actions needed")
 
 
 class TaskExecutor(dspy.Signature):
@@ -40,17 +35,11 @@ class TaskExecutor(dspy.Signature):
     """
 
     task_title: str = dspy.InputField(desc="The title of the task to execute")
-    task_description: str = dspy.InputField(
-        desc="Detailed description of what needs to be done"
-    )
+    task_description: str = dspy.InputField(desc="Detailed description of what needs to be done")
     task_files: str = dspy.InputField(desc="List of files likely to be affected")
     task_acceptance_criteria: str = dspy.InputField(desc="Criteria for task completion")
-    existing_code_context: str = dspy.InputField(
-        desc="Relevant existing code from the project"
-    )
-    project_conventions: str = dspy.InputField(
-        desc="Project coding conventions and patterns"
-    )
+    existing_code_context: str = dspy.InputField(desc="Relevant existing code from the project")
+    project_conventions: str = dspy.InputField(desc="Project coding conventions and patterns")
 
     execution_result: TaskExecution = dspy.OutputField(
         desc="Structured execution plan with operations and commands"

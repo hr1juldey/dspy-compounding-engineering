@@ -6,24 +6,38 @@ enabling the system to improve over time by accessing past insights.
 """
 
 import glob
-import hashlib
+import itertools
 import json
 import os
-import shutil
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 
+from filelock import FileLock
+from qdrant_client import QdrantClient
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    VectorParams,
+)
 from rich.console import Console
 
-from utils.kb_compression import LLMKBCompressor
+from utils.embeddings import EmbeddingProvider
+from utils.knowledge_docs import KnowledgeDocumentation
 
 console = Console()
 
 
 class KnowledgeBase:
     """
-    Manages a collection of learnings stored as JSON files.
+    Manages a collection of learnings stored as JSON files and indexed in Qdrant.
     """
+
+    COLLECTION_NAME = "learnings"
 
     def __init__(self, knowledge_dir: str = ".knowledge"):
         self.knowledge_dir = knowledge_dir
@@ -32,10 +46,171 @@ class KnowledgeBase:
         os.makedirs(backups_dir, exist_ok=True)
         self.lock_path = os.path.join(self.knowledge_dir, "kb.lock")
 
+        # Docs Service
+        self.docs_service = KnowledgeDocumentation(self.knowledge_dir)
+
+        # Initialize Qdrant Client
+        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        self.vector_db_available = False
+
+        # Validate URL
+        if not self._is_valid_url(qdrant_url):
+            console.print(
+                f"[red]Invalid QDRANT_URL: {qdrant_url}. Using keyword search only.[/red]"
+            )
+            self.client = None
+        else:
+            try:
+                self.client = QdrantClient(url=qdrant_url, timeout=2.0)
+                # Test connection
+                self.client.get_collections()
+                self.vector_db_available = True
+            except Exception:
+                console.print(
+                    "[dim yellow]Qdrant not available. Falling back to simple keyword search."
+                    "[/dim yellow]"
+                )
+                self.client = None
+
+        # Initialize Embedding Provider
+        self.embedding_provider = EmbeddingProvider()
+
+        # Ensure collection exists
+        self._ensure_collection()
+
+        # Sync if empty
+        try:
+            if self.vector_db_available and self.client.count(self.COLLECTION_NAME).count == 0:
+                console.print("[yellow]Vector store empty. Syncing from disk...[/yellow]")
+                self._sync_to_qdrant()
+        except Exception as e:
+            console.print(
+                f"[yellow]Could not check collection count (maybe connectivity issue): {e}[/yellow]"
+            )
+
+    def _is_valid_url(self, url: str) -> bool:
+        """Validate Qdrant URL format."""
+        try:
+            result = urlparse(url)
+            return all([result.scheme, result.netloc]) and result.scheme in ["http", "https"]
+        except Exception:
+            return False
+
+    def _sanitize_text(self, text: str) -> str:
+        """Sanitize text for embedding generation."""
+        if not text:
+            return ""
+        # Remove null bytes and control characters (except common whitespace)
+        text = "".join(ch for ch in text if ch == "\n" or ch == "\r" or ch == "\t" or ch >= " ")
+        # Limit length to prevent DOS/OOM (approx 8k tokens safe limit)
+        return text[:30000]
+
     def _ensure_knowledge_dir(self):
         """Ensure the knowledge directory exists."""
         if not os.path.exists(self.knowledge_dir):
             os.makedirs(self.knowledge_dir)
+
+    def _ensure_collection(self):
+        """Ensure the Qdrant collection exists."""
+        if not self.vector_db_available:
+            return
+
+        try:
+            if not self.client.collection_exists(self.COLLECTION_NAME):
+                self.client.create_collection(
+                    collection_name=self.COLLECTION_NAME,
+                    vectors_config=VectorParams(
+                        size=self.embedding_provider.vector_size, distance=Distance.COSINE
+                    ),
+                )
+        except Exception as e:
+            console.print(f"[red]Failed to ensure Qdrant collection: {e}[/red]")
+            self.vector_db_available = False
+
+    def _sync_to_qdrant(self, batch_size: int = 50):
+        """Sync all local JSON files to Qdrant with batching."""
+        if not self.vector_db_available:
+            return
+
+        lock = FileLock(self.lock_path)
+        with lock:
+            files = glob.glob(os.path.join(self.knowledge_dir, "*.json"))
+            total_files = len(files)
+            synced_count = 0
+
+            # Process in batches
+            file_iter = iter(files)
+            while True:
+                batch_files = list(itertools.islice(file_iter, batch_size))
+                if not batch_files:
+                    break
+
+                points = []
+                for filepath in batch_files:
+                    try:
+                        with open(filepath, "r") as f:
+                            learning = json.load(f)
+
+                        # Prepare point
+                        text_to_embed = self._prepare_embedding_text(learning)
+                        vector = self.embedding_provider.get_embedding(text_to_embed)
+
+                        learning_id = learning.get("id") or str(uuid.uuid4())
+                        point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(learning_id)))
+
+                        points.append(PointStruct(id=point_id, vector=vector, payload=learning))
+                    except Exception as e:
+                        console.print(f"[red]Failed to prepare {filepath}: {e}[/red]")
+
+                if points:
+                    try:
+                        self.client.upsert(collection_name=self.COLLECTION_NAME, points=points)
+                        synced_count += len(points)
+                        console.print(f"[dim]Synced batch: {synced_count}/{total_files}[/dim]")
+                    except Exception as e:
+                        console.print(f"[red]Failed to upsert batch: {e}[/red]")
+
+            console.print(f"[green]Synced {synced_count} learnings to Qdrant.[/green]")
+
+    def _prepare_embedding_text(self, learning: Dict[str, Any]) -> str:
+        """Helper to create text for embedding."""
+        text_parts = [str(learning.get("title", "")), str(learning.get("description", ""))]
+
+        content = learning.get("content", "")
+        if isinstance(content, dict):
+            text_parts.append(str(content.get("summary", "")))
+        else:
+            text_parts.append(str(content))
+
+        if learning.get("codified_improvements"):
+            for imp in learning["codified_improvements"]:
+                text_parts.append(f"{imp.get('title', '')} {imp.get('description', '')}")
+
+        return " ".join([self._sanitize_text(p) for p in text_parts])
+
+    def _index_learning(self, learning: Dict[str, Any]):
+        """Index a single learning into Qdrant."""
+        if not self.vector_db_available:
+            return
+
+        try:
+            text_to_embed = self._prepare_embedding_text(learning)
+            vector = self.embedding_provider.get_embedding(text_to_embed)
+
+            learning_id = learning.get("id")
+            if not learning_id:
+                learning_id = str(uuid.uuid4())
+
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(learning_id)))
+
+            self.client.upsert(
+                collection_name=self.COLLECTION_NAME,
+                points=[PointStruct(id=point_id, vector=vector, payload=learning)],
+            )
+        except Exception as e:
+            console.print(
+                f"[red]Error indexing learning {learning.get('id', 'unknown')}: {e}[/red]"
+            )
 
     def add_learning(self, learning: Dict[str, Any]) -> str:
         """
@@ -58,19 +233,25 @@ class KnowledgeBase:
         learning["created_at"] = datetime.now().isoformat()
         learning["id"] = timestamp
 
+        lock = FileLock(self.lock_path)
         try:
-            tmp_path = filepath + ".tmp"
-            with open(tmp_path, "w") as f:
-                json.dump(learning, f, indent=2)
-            os.replace(tmp_path, filepath)
-            console.print(f"[green]✓ Learning saved to {filepath}[/green]")
+            with lock:
+                # 1. Save to Disk (Source of Truth/Backup)
+                tmp_path = filepath + ".tmp"
+                with open(tmp_path, "w") as f:
+                    json.dump(learning, f, indent=2)
+                os.replace(tmp_path, filepath)
 
-            # Update AI.md
-            self._update_ai_md()
+                # 2. Index in Qdrant
+                self._index_learning(learning)
 
-            # Auto-compress if AI.md is getting large
-            if self.get_ai_md_size() > self.COMPRESSION_THRESHOLD:
-                self.review_and_compress()
+                console.print(
+                    f"[green]✓ Learning saved to {filepath} and indexed in Qdrant[/green]"
+                )
+
+                # 3. Update Docs
+                self.docs_service.update_ai_md(self.get_all_learnings())
+                self.docs_service.review_and_compress()
 
             return filepath
         except Exception as e:
@@ -81,20 +262,66 @@ class KnowledgeBase:
         self, query: str = "", tags: List[str] = None, limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Search for relevant learnings.
+        Search for relevant learnings using Vector Search.
 
         Args:
-            query: Text to search for in title/description (simple substring match for now).
+            query: Text to search for.
             tags: List of tags to filter by.
             limit: Maximum number of results to return.
 
         Returns:
             List of learning dictionaries.
         """
+        if not query and not tags:
+            return self.get_all_learnings()[:limit]
+
+        try:
+            if not self.vector_db_available:
+                raise ConnectionError("Qdrant not available")
+
+            # Prepare Filter
+            query_filter = None
+            if tags:
+                should_conditions = []
+                for tag in tags:
+                    # Check 'tags' field
+                    should_conditions.append(
+                        FieldCondition(key="tags", match=MatchValue(value=tag))
+                    )
+                    # Check 'category' field (treat as implicit tag)
+                    should_conditions.append(
+                        FieldCondition(
+                            key="category",
+                            match=MatchValue(value=tag),  # Categories are stored as-is in payload
+                        )
+                    )
+
+                # Check if ANY tag matches
+                query_filter = Filter(should=should_conditions)
+
+            # Vector Search
+            query_vector = self.embedding_provider.get_embedding(query)
+
+            search_result = self.client.query_points(
+                collection_name=self.COLLECTION_NAME,
+                query=query_vector,
+                limit=limit,
+                query_filter=query_filter,
+            ).points
+
+            results = [hit.payload for hit in search_result]
+            return results
+
+        except Exception as e:
+            console.print(f"[red]Vector search failed: {e}. Falling back to disk search.[/red]")
+            return self._legacy_search(query, tags, limit)
+
+    def _legacy_search(
+        self, query: str = "", tags: List[str] = None, limit: int = 5
+    ) -> List[Dict[str, Any]]:
+        """Legacy disk-based search (fallback)."""
         results = []
         files = glob.glob(os.path.join(self.knowledge_dir, "*.json"))
-
-        # Sort by newest first
         files.sort(reverse=True)
 
         for filepath in files:
@@ -102,36 +329,30 @@ class KnowledgeBase:
                 with open(filepath, "r") as f:
                     learning = json.load(f)
 
-                # Filter by tags
                 if tags:
                     learning_tags = learning.get("tags", [])
-                    # Also check category as a tag
                     learning_tags.append(learning.get("category", ""))
-
-                    if not any(
-                        tag.lower() in [t.lower() for t in learning_tags]
-                        for tag in tags
-                    ):
+                    if not any(tag.lower() in [t.lower() for t in learning_tags] for tag in tags):
                         continue
 
-                # Filter by query
                 if query:
-                    search_text = f"{learning.get('title', '')} {learning.get('description', '')} {learning.get('content', '')}".lower()
+                    search_text = (
+                        f"{learning.get('title', '')} {learning.get('description', '')} "
+                        f"{learning.get('content', '')}"
+                    ).lower()
                     if query.lower() not in search_text:
                         continue
 
                 results.append(learning)
                 if len(results) >= limit:
                     break
-
             except Exception:
                 continue
-
         return results
 
     def get_all_learnings(self) -> List[Dict[str, Any]]:
         """Retrieve all learnings."""
-        return self.search_knowledge(limit=1000)
+        return self._legacy_search(limit=1000)
 
     def get_context_string(self, query: str = "", tags: List[str] = None) -> str:
         """
@@ -141,22 +362,25 @@ class KnowledgeBase:
         if not learnings:
             return "No relevant past learnings found."
 
-        context = "## Relevant Past Learnings\n\n"
+        context = "## Relevant Past Learnings\\n\\n"
         for learning in learnings:
-            context += f"### {learning.get('title', 'Untitled')}\n"
-            context += f"- **Category**: {learning.get('category', 'General')}\n"
-            context += f"- **Source**: {learning.get('source', 'Unknown')}\n"
-            context += f"- **Date**: {learning.get('created_at', 'Unknown')}\n"
+            context += f"### {learning.get('title', 'Untitled')}\\n"
+            context += f"- **Category**: {learning.get('category', 'General')}\\n"
+            context += f"- **Source**: {learning.get('source', 'Unknown')}\\n"
+            context += f"- **Date**: {learning.get('created_at', 'Unknown')}\\n"
             content = learning.get("content", "")
             if isinstance(content, dict):
-                context += f"\n{content.get('summary', '')}\n\n"
+                context += f"\\n{content.get('summary', '')}\\n\\n"
             else:
-                context += f"\n{content}\n\n"
+                context += f"\\n{content}\\n\\n"
             if learning.get("codified_improvements"):
-                context += "- **Improvements**:\n"
+                context += "- **Improvements**:\\n"
                 for imp in learning["codified_improvements"]:
-                    context += f"  - [{imp.get('type', 'item')}] {imp.get('title', '')}: {imp.get('description', '')}\n"
-            context += "\n"
+                    context += (
+                        f"  - [{imp.get('type', 'item')}] {imp.get('title', '')}: "
+                        f"{imp.get('description', '')}\\n"
+                    )
+            context += "\\n"
 
         return context
 
@@ -183,21 +407,19 @@ class KnowledgeBase:
             all_learnings, key=lambda x: x.get("created_at", ""), reverse=True
         )[:limit]
 
-        prompt = "\n\n---\n\n## System Learnings (Auto-Injected)\n\n"
-        prompt += (
-            "The following patterns and learnings have been codified from past work. "
-        )
-        prompt += "Apply these automatically to the current task:\n\n"
+        prompt = "\\n\\n---\\n\\n## System Learnings (Auto-Injected)\\n\\n"
+        prompt += "The following patterns and learnings have been codified from past work. "
+        prompt += "Apply these automatically to the current task:\\n\\n"
 
         for learning in sorted_learnings:
-            prompt += f"### {learning.get('title', 'Untitled')}\n"
-            prompt += f"**Source:** {learning.get('source', 'unknown')}\n"
+            prompt += f"### {learning.get('title', 'Untitled')}\\n"
+            prompt += f"**Source:** {learning.get('source', 'unknown')}\\n"
 
             if learning.get("codified_improvements"):
                 for imp in learning["codified_improvements"]:
-                    prompt += f"- {imp.get('description', '')}\n"
+                    prompt += f"- {imp.get('description', '')}\\n"
 
-            prompt += "\n"
+            prompt += "\\n"
 
         return prompt
 
@@ -205,286 +427,12 @@ class KnowledgeBase:
         self, description: str, threshold: float = 0.3, limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
-        Search for similar patterns using basic text similarity.
-
-        In a production system, this would use vector embeddings (OpenAI, local).
-        For now, we use simple keyword-based Jaccard similarity.
-
-        Args:
-            description: Text to find similar learnings for
-            threshold: Minimum similarity score (0.0 to 1.0, default: 0.3)
-            limit: Maximum number of results
-
-        Returns:
-            List of dicts with 'learning' and 'similarity' keys, sorted by similarity
+        Search for similar patterns using vector embeddings.
         """
-        all_learnings = self.get_all_learnings()
-
-        if not all_learnings:
-            return []
-
-        # Simple keyword-based similarity
-        desc_words = set(description.lower().split())
+        learnings = self.search_knowledge(query=description, limit=limit)
 
         results = []
-        for learning in all_learnings:
-            learning_text = (
-                f"{learning.get('title', '')} {learning.get('description', '')}"
-            )
-
-            # Also include improvement descriptions
-            if learning.get("codified_improvements"):
-                for imp in learning["codified_improvements"]:
-                    learning_text += (
-                        f" {imp.get('title', '')} {imp.get('description', '')}"
-                    )
-
-            learning_words = set(learning_text.lower().split())
-
-            # Jaccard similarity: intersection / union
-            intersection = desc_words.intersection(learning_words)
-            union = desc_words.union(learning_words)
-
-            if len(union) > 0:
-                similarity = len(intersection) / len(union)
-
-                if similarity >= threshold:
-                    results.append({"learning": learning, "similarity": similarity})
-
-        # Sort by similarity (highest first)
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-
-        return results[:limit]
-
-    def get_ai_md_size(self) -> int:
-        """
-        Get current size of AI.md in characters.
-
-        Returns:
-            Size in characters, or 0 if file doesn't exist
-        """
-        ai_md_path = os.path.join(self.knowledge_dir, "AI.md")
-        if not os.path.exists(ai_md_path):
-            return 0
-        try:
-            with open(ai_md_path, "r") as f:
-                return len(f.read())
-        except Exception:
-            return 0
-
-    def compress_ai_md(self, ratio: float = 0.5, dry_run: bool = False) -> None:
-        """
-        Compress AI.md using LLM-based semantic compression.
-
-        Args:
-            ratio: Target compression ratio (0.0 to 1.0).
-            dry_run: If True, only simulate compression and show stats.
-        """
-
-        # Input validation for ratio parameter
-        if not (0.0 <= ratio <= 1.0):
-            raise ValueError("Ratio must be between 0.0 and 1.0")
-
-        ai_md_path = os.path.join(self.knowledge_dir, "AI.md")
-        if not os.path.exists(ai_md_path):
-            return
-
-        try:
-            console.print(
-                f"[cyan]Compressing AI.md (LLM-powered, target ratio {ratio})...[/cyan]"
-            )
-
-            # Create backup before processing
-            if not dry_run:
-                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                backups_dir = os.path.join(self.knowledge_dir, "backups")
-                os.makedirs(backups_dir, exist_ok=True)
-                backup_path = os.path.join(backups_dir, f"AI.md.backup.{timestamp}")
-                shutil.copy2(ai_md_path, backup_path)
-                console.print(f"[dim]Backup created at {backup_path}[/dim]")
-
-            # Size-based compression strategy
-            current_size = self.get_ai_md_size()
-
-            with open(ai_md_path, "r") as f:
-                content = f.read()
-
-            # Check cache before performing LLM compression
-            content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()
-            cache_key = f"{content_hash}_{ratio}"
-
-            if cache_key in self._compression_cache:
-                console.print("[blue]Using cached compression result...[/blue]")
-                compressed_content = self._compression_cache[cache_key]
-            else:
-                # Attempt LLM compression
-                console.print("[cyan]Performing LLM compression...[/cyan]")
-                compressor = LLMKBCompressor()
-                compressed_content = compressor(content=content, ratio=ratio)
-
-                # Cache the result for future use
-                self._compression_cache[cache_key] = compressed_content
-
-            # Safety check: if compression failed (empty) or grew significantly (hallucination), fallback
-            if not compressed_content or len(compressed_content) > len(content) * 1.2:
-                raise ValueError("Compression produced invalid result")
-
-            if dry_run:
-                console.print("[yellow]Dry run: Skipping write to file.[/yellow]")
-            else:
-                # Write back
-                tmp_path = ai_md_path + ".tmp"
-                with open(tmp_path, "w") as f:
-                    f.write(compressed_content)
-                os.replace(tmp_path, ai_md_path)
-
-            new_size = len(compressed_content)
-            reduction = (1 - new_size / current_size) * 100
-            console.print(
-                f"[green]✓ AI.md compressed: {current_size:,} → {new_size:,} chars ({reduction:.1f}% reduction)[/green]"
-            )
-
-        except Exception as e:
-            console.print(f"[red]LLM compression failed: {e}[/red]")
-            raise
-
-    def _compress_heuristic(self) -> None:
-        """
-        Compress AI.md by consolidating similar learnings.
-
-        This uses simple deduplication to:
-        1. Group similar learnings by category
-        2. Merge duplicate or near-duplicate patterns
-        3. Preserve unique insights
-        4. Maintain categorical structure
-
-        Note: No backup is created - rely on git for version control.
-        """
-        ai_md_path = os.path.join(self.knowledge_dir, "AI.md")
-        if not os.path.exists(ai_md_path):
-            return
-
-        try:
-            console.print("[cyan]Compressing AI.md...[/cyan]")
-
-            # Get all learnings
-            learnings = self.get_all_learnings()
-
-            # Group by category and consolidate
-            by_category = {}
-            for learning in learnings:
-                cat = learning.get("category", "General").title()
-                if cat not in by_category:
-                    by_category[cat] = []
-                by_category[cat].append(learning)
-
-            # For each category, consolidate similar items
-            consolidated_learnings = []
-            for category, items in by_category.items():
-                # If category has many items, consolidate
-                if len(items) > 5:
-                    # Use simple deduplication for now
-                    # In production, would use LLM to intelligently merge
-                    seen_hashes = set()
-                    for item in items:
-                        content_str = json.dumps(item, sort_keys=True)
-                        h = hashlib.md5(content_str.encode()).hexdigest()
-                        if h not in seen_hashes:
-                            consolidated_learnings.append(item)
-                            seen_hashes.add(h)
-                else:
-                    consolidated_learnings.extend(items)
-
-            # Save compressed JSON files (remove duplicates)
-            # Keep only the consolidated learnings
-            backups_dir = os.path.join(self.knowledge_dir, "backups")
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
-            for filepath in glob.glob(os.path.join(self.knowledge_dir, "*.json")):
-                learning_id = os.path.basename(filepath).split("-")[0]
-                if not any(
-                    item.get("id") == learning_id for item in consolidated_learnings
-                ):
-                    backup_path = os.path.join(
-                        backups_dir, f"{timestamp}_{os.path.basename(filepath)}"
-                    )
-                    shutil.move(filepath, backup_path)
-
-            # Regenerate AI.md
-            self._update_ai_md()
-
-            console.print(
-                f"[green]✓ AI.md compressed: {len(learnings)} → {len(consolidated_learnings)} learnings[/green]"
-            )
-
-        except Exception as e:
-            console.print(f"[yellow]Failed to compress AI.md: {e}[/yellow]")
-
-    # Threshold for auto-compression (in characters)
-    # 15KB ~= 3,750 tokens
-    COMPRESSION_THRESHOLD = 15000  # 15KB threshold for triggering compression
-    LLM_COMPRESSION_MIN_SIZE = (
-        10000  # 10KB minimum for LLM compression (below this, use heuristic)
-    )
-    _compression_cache: Dict[str, str] = {}  # Cache for compression results
-
-    def review_and_compress(self) -> None:
-        """
-        Auto-review AI.md quality and compress if needed.
-
-        This is called automatically when AI.md exceeds size threshold.
-        """
-        size = self.get_ai_md_size()
-        console.print(
-            f"[dim]AI.md size: {size:,} chars (threshold: {self.COMPRESSION_THRESHOLD:,})[/dim]"
-        )
-
-        if size > self.COMPRESSION_THRESHOLD:
-            self.compress_ai_md()
-
-    def _update_ai_md(self):
-        learnings = self.get_all_learnings()
-
-        # Group by category
-        by_category = {}
         for learning in learnings:
-            cat = learning.get("category", "General").title()
-            if cat not in by_category:
-                by_category[cat] = []
-            by_category[cat].append(learning)
+            results.append({"learning": learning, "similarity": 0.9})
 
-        content = "# AI Knowledge Base\n\n"
-        content += "This file contains codified learnings and improvements for the AI system.\n"
-        content += "It is automatically updated when new learnings are added.\n\n"
-
-        for category, items in sorted(by_category.items()):
-            content += f"## {category}\n\n"
-            for item in items:
-                # Use feedback_summary as title if title field is missing
-                title = item.get("title") or item.get("feedback_summary", "Untitled")
-                content += f"### {title}\n"
-
-                # Add description if present
-                description = item.get("description", "")
-                if description:
-                    content += f"{description}\n\n"
-                else:
-                    content += "\n"
-
-                if item.get("codified_improvements"):
-                    content += "**Improvements:**\n"
-                    for imp in item["codified_improvements"]:
-                        type_badge = f"[{imp.get('type', 'item').upper()}]"
-                        content += f"- {type_badge} {imp.get('title', '')}: {imp.get('description', '')}\n"
-                    content += "\n"
-                content += "\n"
-            content += "\n"
-
-        ai_md_path = os.path.join(self.knowledge_dir, "AI.md")
-        try:
-            tmp_path = ai_md_path + ".tmp"
-            with open(tmp_path, "w") as f:
-                f.write(content)
-            os.replace(tmp_path, ai_md_path)
-            console.print(f"[dim]Updated {ai_md_path}[/dim]")
-        except Exception as e:
-            console.print(f"[yellow]Failed to update AI.md: {e}[/yellow]")
+        return results

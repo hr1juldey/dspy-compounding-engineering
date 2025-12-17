@@ -32,6 +32,8 @@ dependencies = [
     "jsonschema",
     "pyyaml>=6.0",
     "filelock>=3.15.4",
+    "qdrant-client>=1.7.0",
+    "pygments<2.19.0",
 ]
 
 
@@ -59,7 +61,6 @@ packages = ["agents", "workflows", "utils", "cli.py", "config.py"]
 [dependency-groups]
 dev = [
     "ruff>=0.14.7",
-    "isort>=5.13.0",
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",
@@ -68,18 +69,20 @@ dev = [
     "pytest-asyncio>=0.21.0",
 ]
 
-[tool.isort]
-profile = "black"
-line_length = 100
-known_first_party = ["agents", "workflows", "utils"]
-skip_gitignore = true
+[tool.ruff]
+line-length = 100
+target-version = "py310"
 
-[tool.uv]
-# UV configuration for global tool installation
-dev-dependencies = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
 ]
+ignore = []
 
+[tool.ruff.lint.isort]
+known-first-party = ["agents", "workflows", "utils"]

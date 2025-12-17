@@ -37,19 +37,15 @@ def _fill_recommended_action(content: str, solution_text: str = None) -> str:
     if solution_text:
         recommendation = solution_text
     else:
-        recommendation = (
-            "Implement the proposed solution from the code review finding (Option 1)."
-        )
+        recommendation = "Implement the proposed solution from the code review finding (Option 1)."
 
     return content.replace(placeholder, recommendation)
 
 
-def run_triage():
+def run_triage():  # noqa: C901
     todos_dir = "todos"
     if not os.path.exists(todos_dir):
-        console.print(
-            f"[yellow]Directory '{todos_dir}' does not exist. Creating it...[/yellow]"
-        )
+        console.print(f"[yellow]Directory '{todos_dir}' does not exist. Creating it...[/yellow]")
         os.makedirs(todos_dir)
 
     consistency_check_todos(todos_dir)
@@ -78,9 +74,7 @@ def run_triage():
         console.print("[green]No pending todos found![/green]")
         return
 
-    console.print(
-        f"[bold]Found {len(pending_files)} pending items for triage.[/bold]\n"
-    )
+    console.print(f"[bold]Found {len(pending_files)} pending items for triage.[/bold]\n")
 
     # Initialize KB-augmented triage predictor
     triage_predictor = KBPredict(
@@ -120,25 +114,25 @@ def run_triage():
                 action_status = "✅ No Action Required (review passed)"
             console.print(f"[dim]Analysis: {action_status}[/dim]")
         else:
-            console.print(
-                "[dim yellow]Warning: action_required field not present[/dim yellow]"
-            )
+            console.print("[dim yellow]Warning: action_required field not present[/dim yellow]")
 
-        should_auto_complete = (
-            hasattr(response, "action_required") and not response.action_required
-        )
+        should_auto_complete = hasattr(response, "action_required") and not response.action_required
         if should_auto_complete:
             console.print("[dim]🤖 Auto-completing: No action required[/dim]")
 
             if "-pending-" in filename:
                 complete_todo(
                     file_path,
-                    resolution_summary="Automatically marked as complete - no action required based on finding analysis.",
+                    resolution_summary=(
+                        "Automatically marked as complete - "
+                        "no action required based on finding analysis."
+                    ),
                     action_msg="Auto-completed during triage (no action required)",
                     rename_to_complete=True,
                 )
                 console.print(
-                    f"[green]✅ Auto-Completed: {filename.replace('-pending-', '-complete-')} - Status: complete[/green]"
+                    f"[green]✅ Auto-Completed: {filename.replace('-pending-', '-complete-')} "
+                    "- Status: complete[/green]"
                 )
             continue
 
@@ -160,9 +154,7 @@ def run_triage():
 
                 # Fill recommended action with the proposed solution from triage
                 solution = (
-                    response.proposed_solution
-                    if hasattr(response, "proposed_solution")
-                    else None
+                    response.proposed_solution if hasattr(response, "proposed_solution") else None
                 )
                 new_content = _fill_recommended_action(new_content, solution)
 
@@ -174,9 +166,7 @@ def run_triage():
                     f.write(new_content)
 
                 os.remove(file_path)
-                console.print(
-                    f"[green]✅ Approved: {new_filename} - Status: ready[/green]"
-                )
+                console.print(f"[green]✅ Approved: {new_filename} - Status: ready[/green]")
                 approved_count += 1
                 approved_todos.append(new_filename)
 
@@ -200,15 +190,14 @@ def run_triage():
                     rename_to_complete=True,
                 )
                 console.print(
-                    f"[green]✅ Completed: {filename.replace('-pending-', '-complete-')} - Status: complete[/green]"
+                    f"[green]✅ Completed: {filename.replace('-pending-', '-complete-')} "
+                    "- Status: complete[/green]"
                 )
             else:
                 console.print(f"[red]Error: Expected '-pending-' in {filename}[/red]")
         elif choice == "all":
             # Accept all remaining items (including current one)
-            console.print(
-                f"\n[bold cyan]Accepting all {remaining} remaining items...[/bold cyan]"
-            )
+            console.print(f"\n[bold cyan]Accepting all {remaining} remaining items...[/bold cyan]")
 
             # Process current file first
             remaining_files = [file_path] + pending_files[idx:]
@@ -222,9 +211,7 @@ def run_triage():
                     new_filename = remaining_filename.replace("-pending-", "-ready-")
                     new_path = os.path.join(todos_dir, new_filename)
 
-                    new_content = remaining_content.replace(
-                        "status: pending", "status: ready"
-                    )
+                    new_content = remaining_content.replace("status: pending", "status: ready")
 
                     # Fill recommended action with proposed solution if available
                     solution = (
@@ -273,22 +260,16 @@ def run_triage():
 
             if "-pending-" in filename:
                 # Replace old priority with new one
-                new_filename = re.sub(
-                    r"-pending-(p[123])-", f"-ready-{new_priority}-", filename
-                )
+                new_filename = re.sub(r"-pending-(p[123])-", f"-ready-{new_priority}-", filename)
                 new_path = os.path.join(todos_dir, new_filename)
 
                 # Update content
                 new_content = content.replace("status: pending", "status: ready")
-                new_content = re.sub(
-                    r"priority: p[123]", f"priority: {new_priority}", new_content
-                )
+                new_content = re.sub(r"priority: p[123]", f"priority: {new_priority}", new_content)
 
                 # Fill recommended action with proposed solution
                 solution = (
-                    response.proposed_solution
-                    if hasattr(response, "proposed_solution")
-                    else None
+                    response.proposed_solution if hasattr(response, "proposed_solution") else None
                 )
                 new_content = _fill_recommended_action(new_content, solution)
 
@@ -316,9 +297,7 @@ def run_triage():
 
     table.add_row("Total Items", str(total_items))
     table.add_row("[green]Approved (ready)[/green]", f"[green]{approved_count}[/green]")
-    table.add_row(
-        "[yellow]Skipped (deleted)[/yellow]", f"[yellow]{skipped_count}[/yellow]"
-    )
+    table.add_row("[yellow]Skipped (deleted)[/yellow]", f"[yellow]{skipped_count}[/yellow]")
 
     console.print(table)
 
@@ -352,6 +331,4 @@ def run_triage():
     console.print("2. Start work on approved items:")
     console.print("   [cyan]python cli.py work <todo_file>[/cyan]")
     console.print("3. Or commit the todos:")
-    console.print(
-        "   [cyan]git add todos/ && git commit -m 'chore: add triaged todos'[/cyan]"
-    )
+    console.print("   [cyan]git add todos/ && git commit -m 'chore: add triaged todos'[/cyan]")

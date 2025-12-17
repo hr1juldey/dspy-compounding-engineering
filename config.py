@@ -13,9 +13,7 @@ def configure_dspy():
     if provider == "openai":
         lm = dspy.LM(model=model_name, api_key=os.getenv("OPENAI_API_KEY"))
     elif provider == "anthropic":
-        lm = dspy.LM(
-            model=f"anthropic/{model_name}", api_key=os.getenv("ANTHROPIC_API_KEY")
-        )
+        lm = dspy.LM(model=f"anthropic/{model_name}", api_key=os.getenv("ANTHROPIC_API_KEY"))
     elif provider == "ollama":
         # Use litellm's native Ollama support
         # Format: ollama/model_name

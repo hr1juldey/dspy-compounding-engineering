@@ -47,10 +47,7 @@ def _get_file_listing(root_dir: str = ".", max_depth: int = 3) -> str:
         entries = [
             e
             for e in entries
-            if not any(
-                e == p or (p.startswith("*") and e.endswith(p[1:]))
-                for p in skip_patterns
-            )
+            if not any(e == p or (p.startswith("*") and e.endswith(p[1:])) for p in skip_patterns)
         ]
 
         for i, entry in enumerate(entries):
@@ -98,9 +95,7 @@ def _get_relevant_file_contents(max_chars: int = 10000) -> str:
                     # Truncate individual files to prevent one large file dominating
                     max_per_file = min(3000, max_chars - total_chars)
                     if len(file_content) > max_per_file:
-                        file_content = (
-                            file_content[:max_per_file] + "\n...[truncated]..."
-                        )
+                        file_content = file_content[:max_per_file] + "\n...[truncated]..."
                     content_parts.append(f"--- {filename} ---\n{file_content}")
                     total_chars += len(file_content)
             except Exception:
@@ -123,9 +118,7 @@ def run_plan(feature_description: str):
     console.print("[cyan]Scanning project structure...[/cyan]")
     file_listing = _get_file_listing()
     relevant_contents = _get_relevant_file_contents()
-    console.print(
-        f"[dim]Found {len(file_listing.splitlines())} files/directories[/dim]"
-    )
+    console.print(f"[dim]Found {len(file_listing.splitlines())} files/directories[/dim]")
 
     with console.status("Running Research Agents..."):
         # Parallel execution in theory, sequential here for simplicity
@@ -176,7 +169,8 @@ def run_plan(feature_description: str):
     with console.status("Generating Plan..."):
         # Use KB-augmented planning for better context
         planner = KBPredict(
-            PlanGenerator,  # Changed from PlannerAgent to PlanGenerator to match original call structure
+            # Changed from PlannerAgent to PlanGenerator to match original call structure
+            PlanGenerator,
             kb_tags=["planning", "architecture"],
             kb_query=feature_description,
         )

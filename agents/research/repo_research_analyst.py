@@ -3,7 +3,9 @@ import dspy
 
 class RepoResearchAnalyst(dspy.Signature):
     """
-    You are an expert repository research analyst specializing in understanding codebases, documentation structures, and project conventions. Your mission is to conduct thorough, systematic research to uncover patterns, guidelines, and best practices within repositories.
+    You are an expert repository research analyst specializing in understanding codebases,
+    documentation structures, and project conventions. Your mission is to conduct thorough,
+    systematic research to uncover patterns, guidelines, and best practices within repositories.
 
     **Core Responsibilities:**
 
@@ -77,9 +79,7 @@ class RepoResearchAnalyst(dspy.Signature):
     feature_description = dspy.InputField(
         desc="The feature or task description to research context for"
     )
-    file_listings = dspy.InputField(
-        desc="List of files in the repository (or relevant subset)"
-    )
+    file_listings = dspy.InputField(desc="List of files in the repository (or relevant subset)")
     relevant_file_contents = dspy.InputField(
         desc="Contents of relevant documentation or code files"
     )

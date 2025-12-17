@@ -35,9 +35,7 @@ def test_read_file_range(temp_dir):
     test_file.write_text("Line 1\nLine 2\nLine 3\n")
 
     # Use relative path "test.txt"
-    result = read_file_range(
-        "test.txt", start_line=1, end_line=2, base_dir=str(temp_dir)
-    )
+    result = read_file_range("test.txt", start_line=1, end_line=2, base_dir=str(temp_dir))
     assert "Line 1" in result
     assert "Line 2" in result
 
@@ -45,8 +43,9 @@ def test_read_file_range(temp_dir):
 @pytest.mark.unit
 def test_safe_write_overwrite(temp_dir):
     """Test safe_write overwrite behavior."""
-    from utils.safe_io import safe_write
     import pytest
+
+    from utils.safe_io import safe_write
 
     test_file = temp_dir / "test.txt"
     test_file.write_text("Original", encoding="utf-8")
@@ -97,7 +96,5 @@ def test_edit_file_lines_validation(temp_dir):
     assert "Error: edit item 0 must be a dictionary" in result
 
     # Missing keys
-    result = edit_file_lines(
-        "test.txt", edits=[{"start_line": 1}], base_dir=str(temp_dir)
-    )
+    result = edit_file_lines("test.txt", edits=[{"start_line": 1}], base_dir=str(temp_dir))
     assert "missing required keys" in result

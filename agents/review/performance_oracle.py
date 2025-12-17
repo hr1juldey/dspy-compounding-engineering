@@ -1,28 +1,25 @@
-from agents.review.schema import ReviewReport, ReviewFinding
 from typing import List
-from pydantic import Field
+
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewFinding, ReviewReport
 
 
 class PerformanceFinding(ReviewFinding):
-    estimated_impact: str = Field(
-        ..., description="Estimated performance impact (High/Medium/Low)"
-    )
+    estimated_impact: str = Field(..., description="Estimated performance impact (High/Medium/Low)")
 
 
 class PerformanceReport(ReviewReport):
-    scalability_assessment: str = Field(
-        ..., description="Assessment of scalability implications"
-    )
-    optimization_opportunities: str = Field(
-        ..., description="High-level optimization suggestions"
-    )
+    scalability_assessment: str = Field(..., description="Assessment of scalability implications")
+    optimization_opportunities: str = Field(..., description="High-level optimization suggestions")
     findings: List[PerformanceFinding] = Field(default_factory=list)
 
 
 class PerformanceOracle(dspy.Signature):
     """
-    You are a Performance Oracle, an optimization expert capable of identifying bottlenecks, inefficiencies, and scalability issues before they reach production.
+    You are a Performance Oracle, an optimization expert capable of identifying bottlenecks,
+    inefficiencies, and scalability issues before they reach production.
 
     ## Core Analysis Framework
     You will systematically evaluate:

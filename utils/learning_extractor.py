@@ -52,7 +52,8 @@ def codify_learning(
         if not codified_obj:
             if not silent:
                 console.print(
-                    f"[dim yellow]⚠ Empty response from FeedbackCodifier for {category}[/dim yellow]"
+                    f"[dim yellow]⚠ Empty response from FeedbackCodifier for {category}"
+                    "[/dim yellow]"
                 )
             return False
 
@@ -82,7 +83,7 @@ def codify_learning(
         return False
 
 
-def codify_review_findings(findings: list, todos_created: int) -> None:
+def codify_review_findings(findings: list, todos_created: int) -> None:  # noqa: C901
     """
     Extract learnings from code review findings.
 
@@ -99,7 +100,8 @@ def codify_review_findings(findings: list, todos_created: int) -> None:
     # Aggregate findings with full details for pattern extraction
     summary_parts = [
         "# Code Review Analysis\n",
-        f"Total findings: {len(findings)} from {len(set(f.get('agent', 'Unknown') for f in findings))} agents",
+        f"Total findings: {len(findings)} from "
+        f"{len({f.get('agent', 'Unknown') for f in findings})} agents",
         f"Actionable items created: {todos_created}\n",
     ]
 
@@ -127,9 +129,7 @@ def codify_review_findings(findings: list, todos_created: int) -> None:
 
     # Add explicit prompts for pattern extraction
     summary_parts.append("\n\n## Pattern Extraction Focus:")
-    summary_parts.append(
-        "- Code quality patterns identified (naming, structure, organization)"
-    )
+    summary_parts.append("- Code quality patterns identified (naming, structure, organization)")
     summary_parts.append("- Architectural decisions and principles")
     summary_parts.append("- Security vulnerabilities or concerns")
     summary_parts.append("- Performance optimization opportunities")

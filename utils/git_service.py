@@ -5,6 +5,53 @@ import subprocess
 class GitService:
     """Helper service for Git and GitHub CLI operations."""
 
+    IGNORE_FILES = [
+        "uv.lock",
+        "package-lock.json",
+        "yarn.lock",
+        "poetry.lock",
+        "Gemfile.lock",
+    ]
+
+    @staticmethod
+    def filter_diff(diff_text: str) -> str:
+        """Filter out ignored files from a git diff."""
+        if not diff_text:
+            return ""
+
+        sections = diff_text.split("diff --git ")
+        filtered_sections = []
+
+        for section in sections:
+            if not section.strip():
+                continue
+
+            # First line usually: a/path/to/file b/path/to/file
+            first_line = section.split("\n", 1)[0]
+
+            is_ignored = False
+            for ignored in GitService.IGNORE_FILES:
+                if f"a/{ignored}" in first_line or f"b/{ignored}" in first_line:
+                    is_ignored = True
+                    break
+
+            if not is_ignored:
+                filtered_sections.append(section)
+
+        if not filtered_sections:
+            return ""
+
+        # Reconstruct
+        result = "diff --git " + "diff --git ".join(filtered_sections)
+        # Handle case where split created an empty first element (common)
+        if diff_text.startswith("diff --git") and not result.startswith("diff --git"):
+            # If our reconstruction missed the prefix because the first section was filtered?
+            # No, if we append "diff --git " to join, we are good.
+            # But if the original text started with it, the first split element is empty string.
+            pass
+
+        return result
+
     @staticmethod
     def is_git_repo() -> bool:
         """Check if current directory is a git repo."""
@@ -24,7 +71,10 @@ class GitService:
                 return GitService.get_pr_diff(target)
 
             # Otherwise treat as local ref
-            cmd = ["git", "diff", target]
+            cmd = ["git", "diff", target, "--", "."]
+            for ignore in GitService.IGNORE_FILES:
+                cmd.append(f":!{ignore}")
+
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return result.stdout
         except subprocess.CalledProcessError:
@@ -39,9 +89,9 @@ class GitService:
         try:
             cmd = ["gh", "pr", "diff", pr_id_or_url]
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            return result.stdout
+            return GitService.filter_diff(result.stdout)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to fetch PR diff: {e.stderr}")
+            raise RuntimeError(f"Failed to fetch PR diff: {e.stderr}") from e
 
     @staticmethod
     def get_pr_details(pr_id_or_url: str) -> dict:
@@ -65,7 +115,7 @@ class GitService:
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             return json.loads(result.stdout)
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to fetch PR details: {e.stderr}")
+            raise RuntimeError(f"Failed to fetch PR details: {e.stderr}") from e
 
     @staticmethod
     def get_current_branch() -> str:
@@ -96,7 +146,7 @@ class GitService:
             data = json.loads(result.stdout)
             return data.get("headRefName", "")
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to fetch PR branch: {e.stderr}")
+            raise RuntimeError(f"Failed to fetch PR branch: {e.stderr}") from e
 
     @staticmethod
     def checkout_pr_worktree(pr_id_or_url: str, worktree_path: str) -> None:
@@ -116,9 +166,9 @@ class GitService:
             # Create worktree
             # Note: gh pr checkout switches the current branch, which might be annoying.
             # A better way for production might be to fetch the ref directly to a local branch
-            # without checking it out, but gh pr checkout is the easiest way to ensure we have the code.
-            # However, since we want to avoid disrupting the user, let's try to just fetch it.
-            # Actually, 'gh pr checkout' modifies the current working directory.
+            # without checking it out, but gh pr checkout is the easiest way to ensure we have the
+            # code. However, since we want to avoid disrupting the user, let's try to just fetch
+            # it. Actually, 'gh pr checkout' modifies the current working directory.
             # To avoid this, we should just fetch the branch.
 
             # Alternative: git fetch origin pull/ID/head:BRANCHNAME
@@ -186,7 +236,7 @@ class GitService:
             subprocess.run(cmd, check=True)
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to checkout PR worktree: {e.stderr}")
+            raise RuntimeError(f"Failed to checkout PR worktree: {e.stderr}") from e
 
     @staticmethod
     def create_feature_worktree(branch_name: str, worktree_path: str) -> None:
@@ -214,4 +264,4 @@ class GitService:
             subprocess.run(cmd, check=True, capture_output=True)
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to create feature worktree: {e.stderr}")
+            raise RuntimeError(f"Failed to create feature worktree: {e.stderr}") from e

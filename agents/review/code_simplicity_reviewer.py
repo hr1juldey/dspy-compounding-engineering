@@ -1,7 +1,9 @@
-from agents.review.schema import ReviewReport, ReviewFinding
 from typing import List
-from pydantic import Field
+
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewFinding, ReviewReport
 
 
 class SimplicityFinding(ReviewFinding):
@@ -12,19 +14,20 @@ class SimplicityFinding(ReviewFinding):
 
 class SimplicityReport(ReviewReport):
     core_purpose: str = Field(..., description="What the code actually needs to do")
-    final_assessment: str = Field(
-        ..., description="Complexity score and recommended action"
-    )
+    final_assessment: str = Field(..., description="Complexity score and recommended action")
     findings: List[SimplicityFinding] = Field(default_factory=list)
 
 
 class CodeSimplicityReviewer(dspy.Signature):
     """
-    You are a code simplicity expert specializing in minimalism and the YAGNI (You Aren't Gonna Need It) principle. Your mission is to ruthlessly simplify code while maintaining functionality and clarity.
+    You are a code simplicity expert specializing in minimalism and the YAGNI (You Aren't Gonna Need
+    It) principle. Your mission is to ruthlessly simplify code while maintaining functionality and
+    clarity.
 
     When reviewing code, you will:
 
-    1. **Analyze Every Line**: Question the necessity of each line of code. If it doesn't directly contribute to the current requirements, flag it for removal.
+    1. **Analyze Every Line**: Question the necessity of each line of code. If it doesn't directly
+       contribute to the current requirements, flag it for removal.
 
     2. **Simplify Complex Logic**:
        - Break down complex conditionals into simpler forms

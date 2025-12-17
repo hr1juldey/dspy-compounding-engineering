@@ -193,9 +193,7 @@ def serialize_todo(frontmatter_dict: dict, body: str) -> str:
     return frontmatter.dumps(post)
 
 
-def atomic_update_todo(
-    file_path: str, update_fn: Callable[[dict, str], tuple[dict, str]]
-) -> bool:
+def atomic_update_todo(file_path: str, update_fn: Callable[[dict, str], tuple[dict, str]]) -> bool:
     """
     Atomically update a todo file using a file lock.
 
@@ -269,9 +267,7 @@ def add_work_log_entry(content: str, action: str) -> str:
         return f"{content}\n\n## Work Log\n{log_entry}"
 
 
-def get_ready_todos(
-    todos_dir: str = "todos", pattern: Optional[str] = None
-) -> List[str]:
+def get_ready_todos(todos_dir: str = "todos", pattern: Optional[str] = None) -> List[str]:
     """
     Find all ready todos in the todos directory, optionally filtered by pattern.
 
@@ -353,9 +349,7 @@ def complete_todo(
         dir_name = os.path.dirname(file_path)
         base_name = os.path.basename(file_path)
         # Replace status indicators in filename
-        new_base = base_name.replace("-ready-", "-complete-").replace(
-            "-pending-", "-complete-"
-        )
+        new_base = base_name.replace("-ready-", "-complete-").replace("-pending-", "-complete-")
         if new_base != base_name:
             new_path = os.path.join(dir_name, new_base)
 
@@ -370,7 +364,7 @@ def complete_todo(
     return new_path
 
 
-def analyze_dependencies(todos: List[dict]) -> dict:
+def analyze_dependencies(todos: List[dict]) -> dict:  # noqa: C901
     """
     Analyze dependencies between todos and create execution plan.
 
@@ -384,97 +378,60 @@ def analyze_dependencies(todos: List[dict]) -> dict:
         return {"execution_order": [], "mermaid_diagram": ""}
 
     # Build dependency graph
-    graph = {t["id"]: set() for t in todos}
+    # Rebuild graph as "Prerequisite -> Dependent"
+    # If A depends on B, then B -> A
+    forward_graph = {t["id"]: set() for t in todos}
     id_to_todo = {t["id"]: t for t in todos}
+    in_degree = {t["id"]: 0 for t in todos}
 
     for todo in todos:
         deps = todo["frontmatter"].get("dependencies", [])
         for dep in deps:
             dep_id = str(dep)
-            if dep_id in graph:
-                graph[todo["id"]].add(dep_id)
+            if dep_id in id_to_todo:
+                forward_graph[dep_id].add(todo["id"])
+                in_degree[todo["id"]] += 1
 
-    # Topological sort (Kahn's algorithm)
-    in_degree = {t_id: 0 for t_id in graph}
-    for t_id in graph:
-        for dep in graph[t_id]:
-            in_degree[t_id] += 1
-
-    queue = [t_id for t_id in graph if in_degree[t_id] == 0]
+    queue = [t["id"] for t in todos if in_degree[t["id"]] == 0]
     batches = []
 
+    processed_count = 0
     while queue:
-        # Current batch can be executed in parallel
-        current_batch = sorted(queue)  # Sort for deterministic order
+        current_batch = sorted(queue)
         batches.append(
-            {"batch": len(batches) + 1, "todos": current_batch, "can_parallel": True}
+            {
+                "batch": len(batches) + 1,
+                "todos": current_batch,
+                "can_parallel": True,
+            }
         )
+        processed_count += len(current_batch)
 
-        # Remove current batch from graph
         next_queue = []
         for t_id in current_batch:
-            # Find nodes that depend on t_id (reverse graph needed or iterate)
-            # Since we have forward graph (A depends on B), we need to find who depends on A?
-            # Wait, graph[A] = {B} means A depends on B.
-            # So if B is done, we can potentially do A.
-            # But Kahn's usually works on "A -> B" meaning A comes before B.
-            # Here "A depends on B" means B must be done before A.
-            # So edge is B -> A.
-            pass
+            for dependent in forward_graph[t_id]:
+                in_degree[dependent] -= 1
+                if in_degree[dependent] == 0:
+                    next_queue.append(dependent)
+        queue = next_queue
 
-        # Let's rebuild graph as "Prerequisite -> Dependent"
-        # If A depends on B, then B -> A
-        forward_graph = {t["id"]: set() for t in todos}
-        in_degree = {t["id"]: 0 for t in todos}
+    if processed_count < len(todos):
+        # Cycle detected or missing dependencies
+        remaining = [t["id"] for t in todos if in_degree[t["id"]] > 0]
+        batches.append(
+            {
+                "batch": len(batches) + 1,
+                "todos": remaining,
+                "can_parallel": False,
+                "warning": "Cycle detected or missing dependencies",
+            }
+        )
 
-        for todo in todos:
-            deps = todo["frontmatter"].get("dependencies", [])
-            for dep in deps:
-                dep_id = str(dep)
-                if dep_id in id_to_todo:
-                    forward_graph[dep_id].add(todo["id"])
-                    in_degree[todo["id"]] += 1
+    # Generate Mermaid diagram
+    mermaid = ["flowchart TD"]
+    for t_id in forward_graph:
+        mermaid.append(f"  T{t_id}[Todo {t_id}]")
+        for dep in forward_graph[t_id]:
+            mermaid.append(f"  T{t_id} --> T{dep}")
 
-        queue = [t["id"] for t in todos if in_degree[t["id"]] == 0]
-        batches = []
-
-        processed_count = 0
-        while queue:
-            current_batch = sorted(queue)
-            batches.append(
-                {
-                    "batch": len(batches) + 1,
-                    "todos": current_batch,
-                    "can_parallel": True,
-                }
-            )
-            processed_count += len(current_batch)
-
-            next_queue = []
-            for t_id in current_batch:
-                for dependent in forward_graph[t_id]:
-                    in_degree[dependent] -= 1
-                    if in_degree[dependent] == 0:
-                        next_queue.append(dependent)
-            queue = next_queue
-
-        if processed_count < len(todos):
-            # Cycle detected or missing dependencies
-            remaining = [t["id"] for t in todos if in_degree[t["id"]] > 0]
-            batches.append(
-                {
-                    "batch": len(batches) + 1,
-                    "todos": remaining,
-                    "can_parallel": False,
-                    "warning": "Cycle detected or missing dependencies",
-                }
-            )
-
-        # Generate Mermaid diagram
-        mermaid = ["flowchart TD"]
-        for t_id in forward_graph:
-            mermaid.append(f"  T{t_id}[Todo {t_id}]")
-            for dep in forward_graph[t_id]:
-                mermaid.append(f"  T{t_id} --> T{dep}")
-
-        return {"execution_order": batches, "mermaid_diagram": "\n".join(mermaid)}
+    return {"execution_order": batches, "mermaid_diagram": "\n".join(mermaid)}

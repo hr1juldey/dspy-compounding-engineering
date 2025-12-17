@@ -78,7 +78,7 @@ def run_unified_work(
         console.print("  python cli.py work p1")
 
 
-def _run_react_todo(
+def _run_react_todo(  # noqa: C901
     pattern: str,
     dry_run: bool,
     parallel: bool = True,
@@ -129,9 +129,7 @@ def _run_react_todo(
 
         try:
             git_service.create_feature_worktree(branch_name, worktree_path)
-            console.print(
-                f"[green]Working in isolated worktree: {worktree_path}[/green]"
-            )
+            console.print(f"[green]Working in isolated worktree: {worktree_path}[/green]")
         except Exception as e:
             console.print(
                 f"[yellow]Warning: Could not create worktree, working in place: {e}[/yellow]"
@@ -144,9 +142,7 @@ def _run_react_todo(
     console.rule("[bold]Phase 3: Resolution[/bold]")
 
     def resolve_todo_task(todo):
-        console.print(
-            f"\n[bold cyan]Resolving Todo {todo['id']}: {todo['slug']}[/bold cyan]"
-        )
+        console.print(f"\n[bold cyan]Resolving Todo {todo['id']}: {todo['slug']}[/bold cyan]")
 
         if dry_run:
             return {"status": "dry_run", "todo_id": todo["id"]}
@@ -160,9 +156,7 @@ def _run_react_todo(
             # Mark complete using service
             complete_todo(
                 todo["path"],
-                resolution_summary=getattr(
-                    result, "resolution_summary", "Resolved via ReAct"
-                ),
+                resolution_summary=getattr(result, "resolution_summary", "Resolved via ReAct"),
                 action_msg="Resolved via ReAct Agent",
             )
 
@@ -173,9 +167,7 @@ def _run_react_todo(
                 codify_work_outcome(
                     todo_id=todo["id"],
                     todo_slug=todo["slug"],
-                    resolution_summary=getattr(
-                        result, "resolution_summary", "Resolved via ReAct"
-                    ),
+                    resolution_summary=getattr(result, "resolution_summary", "Resolved via ReAct"),
                     operations_count=len(getattr(result, "files_modified", [])),
                     success=getattr(result, "success_status", False),
                 )
@@ -183,9 +175,7 @@ def _run_react_todo(
                 pass  # Don't fail resolution if codification fails
 
             return {
-                "status": "success"
-                if getattr(result, "success_status", False)
-                else "error",
+                "status": "success" if getattr(result, "success_status", False) else "error",
                 "todo_id": todo["id"],
                 "summary": getattr(result, "resolution_summary", str(result)),
             }
@@ -221,21 +211,16 @@ def _run_react_todo(
                 console.print(f"[yellow]Warning: {batch['warning']}[/yellow]")
 
             try:
-                if (
-                    parallel
-                    and batch["can_parallel"]
-                    and len(batch_todos) > 1
-                    and not dry_run
-                ):
+                if parallel and batch["can_parallel"] and len(batch_todos) > 1 and not dry_run:
                     console.print(
-                        f"[dim]Executing {len(batch_todos)} todos in parallel with {max_workers} workers[/dim]"
+                        f"[dim]Executing {len(batch_todos)} todos in parallel "
+                        f"with {max_workers} workers[/dim]"
                     )
                     with ThreadPoolExecutor(
                         max_workers=min(max_workers, len(batch_todos))
                     ) as executor:
                         futures = {
-                            executor.submit(resolve_todo_task, todo): todo
-                            for todo in batch_todos
+                            executor.submit(resolve_todo_task, todo): todo for todo in batch_todos
                         }
                         for future in as_completed(futures):
                             result = future.result()
@@ -243,21 +228,21 @@ def _run_react_todo(
                             if result["status"] == "error":
                                 failed_todo = futures[future]
                                 console.print(
-                                    f"[red]Failed to resolve todo {failed_todo['id']}: {result.get('error')}[/red]"
+                                    f"[red]Failed to resolve todo {failed_todo['id']}: "
+                                    f"{result.get('error')}[/red]"
                                 )
                 else:
                     # Sequential execution
                     if len(batch_todos) > 1:
-                        console.print(
-                            f"[dim]Executing {len(batch_todos)} todos sequentially[/dim]"
-                        )
+                        console.print(f"[dim]Executing {len(batch_todos)} todos sequentially[/dim]")
 
                     for todo in batch_todos:
                         result = resolve_todo_task(todo)
                         results.append(result)
                         if result["status"] == "error":
                             console.print(
-                                f"[red]Failed to resolve todo {todo['id']}: {result.get('error')}[/red]"
+                                f"[red]Failed to resolve todo {todo['id']}: "
+                                f"{result.get('error')}[/red]"
                             )
 
             except Exception as e:

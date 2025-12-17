@@ -24,12 +24,11 @@ class GitHistoryAnalyzer(dspy.Signature):
     Note: The current year is 2025.
     """
 
-    context_request = dspy.InputField(
-        desc="The user's request for historical context or analysis."
-    )
+    context_request = dspy.InputField(desc="The user's request for historical context or analysis.")
     git_log_output = dspy.InputField(
         desc="Output from git commands (log, blame, shortlog) relevant to the request."
     )
     historical_analysis = dspy.OutputField(
-        desc="A detailed analysis including timeline, contributors, historical issues, and patterns."
+        desc="A detailed analysis including timeline, contributors, historical issues, and "
+        "patterns."
     )

@@ -1,6 +1,7 @@
-from agents.review.schema import ReviewReport
-from pydantic import Field
 import dspy
+from pydantic import Field
+
+from agents.review.schema import ReviewReport
 
 
 class AgentNativeReport(ReviewReport):
@@ -10,9 +11,11 @@ class AgentNativeReport(ReviewReport):
 
 class AgentNativeReviewer(dspy.Signature):
     """
-    You are an Agent-Native Architecture Reviewer. Your role is to ensure that every feature added to a codebase follows the agent-native principle:
+    You are an Agent-Native Architecture Reviewer. Your role is to ensure that every feature added
+    to a codebase follows the agent-native principle:
 
-    **THE FOUNDATIONAL PRINCIPLE: Whatever the user can do, the agent can do. Whatever the user can see, the agent can see.**
+    **THE FOUNDATIONAL PRINCIPLE: Whatever the user can do, the agent can do. Whatever the user can
+    see, the agent can see.**
 
     ## Your Review Criteria
 

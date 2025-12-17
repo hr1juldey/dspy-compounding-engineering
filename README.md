@@ -80,6 +80,21 @@ cp .env.example .env
 uv sync
 ```
 
+### Vector Database Setup (Qdrant)
+
+This project uses [Qdrant](https://qdrant.tech/) for semantic search. A Docker Compose configuration is provided.
+
+1. **Start Qdrant**:
+   ```bash
+   docker compose up -d qdrant
+   ```
+   This will start Qdrant on `localhost:6333`.
+
+2. **Configure Embeddings**:
+   Ensure your `.env` has the correct `EMBEDDING_BASE_URL` if you are using a non-standard provider (like OpenRouter). See `.env.example`.
+
+> **Note:** If Qdrant is not running, the system will automatically fall back to keyword-based search using local JSON files.
+
 ### Temporary runner: `uvx`
 
 The repository includes a small wrapper script `uvx` that runs the CLI via `uv run` without doing a global install. It's useful for quickly trying commands locally:
@@ -159,7 +174,7 @@ See our [detailed Roadmap](https://strategic-automation.github.io/dspy-compoundi
 
 Key focus areas:
 - **GitHub Integration**: Create Issues, post PR comments, manage Projects
-- **Vector Embeddings**: Upgrade from keyword matching to semantic similarity
+- ~~**Vector Embeddings**: Upgrade from keyword matching to semantic similarity~~ (Completed)
 - **Auto-Triage**: Pattern-based auto-approval/rejection of similar findings
 - **Learning Analytics**: Dashboard showing knowledge growth and reuse
 
@@ -204,6 +219,8 @@ uv run python cli.py review --project
 # Review a specific PR (requires gh cli)
 uv run python cli.py review https://github.com/user/repo/pull/123
 ```
+
+> **Note:** The review process automatically ignores lock files (e.g., `uv.lock`, `package-lock.json`) and standard binary/cache directories to reduce noise.
 
 ### 2. Triage Findings
 

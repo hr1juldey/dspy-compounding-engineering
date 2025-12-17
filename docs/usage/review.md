@@ -18,6 +18,12 @@ uv run python cli.py review [TARGET] [OPTIONS]
 ### Options
 
 - `--project` / `-p`: Review the **entire project** code, not just the diff/changes. useful for initial audits or periodic deep scans.
+    
+### Default Exclusions
+
+The review process automatically ignores the following:
+- **Directories**: `.git`, `.venv`, `venv`, `node_modules`, `__pycache__`, `.pytest_cache`, `dist`, `build`, `.tox`, `.mypy_cache`, `.ruff_cache`
+- **Files**: `uv.lock`, `package-lock.json`, `yarn.lock`, `poetry.lock`, `Gemfile.lock`
 
 ## Examples
 

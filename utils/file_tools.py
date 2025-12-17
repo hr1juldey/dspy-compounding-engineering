@@ -37,9 +37,7 @@ def list_directory(path: str, base_dir: str = ".") -> str:
         return f"Error listing directory: {str(e)}"
 
 
-def search_files(
-    query: str, path: str = ".", regex: bool = False, base_dir: str = "."
-) -> str:
+def search_files(query: str, path: str = ".", regex: bool = False, base_dir: str = ".") -> str:
     """
     Search for a string or regex in files at the given path using grep.
     """
@@ -65,9 +63,7 @@ def search_files(
             # Limit output to avoid context overflow
             lines = process.stdout.splitlines()
             if len(lines) > 50:
-                return (
-                    "\n".join(lines[:50]) + f"\n... and {len(lines) - 50} more matches"
-                )
+                return "\n".join(lines[:50]) + f"\n... and {len(lines) - 50} more matches"
             return process.stdout
         elif process.returncode == 1:
             return "No matches found."
@@ -119,7 +115,7 @@ def read_file_range(
         return f"Error reading file: {str(e)}"
 
 
-def edit_file_lines(
+def edit_file_lines(  # noqa: C901
     file_path: str,
     edits: List[Dict[str, Union[int, str]]],
     base_dir: str = ".",
@@ -146,11 +142,7 @@ def edit_file_lines(
         for i, edit in enumerate(edits):
             if not isinstance(edit, dict):
                 return f"Error: edit item {i} must be a dictionary"
-            if (
-                "start_line" not in edit
-                or "end_line" not in edit
-                or "content" not in edit
-            ):
+            if "start_line" not in edit or "end_line" not in edit or "content" not in edit:
                 return f"Error: edit item {i} missing required keys (start_line, end_line, content)"
 
         safe_path_str = validate_path(file_path, base_dir)
