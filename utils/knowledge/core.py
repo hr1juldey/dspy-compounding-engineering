@@ -161,6 +161,7 @@ class KnowledgeBase(CollectionManagerMixin):
                         sparse_vector = self.embedding_provider.get_sparse_embedding(text_to_embed)
 
                         learning_id = learning.get("id") or str(uuid.uuid4())
+                        # Use UUIDv5 for deterministic but unique point IDs
                         point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(learning_id)))
 
                         points.append(
@@ -213,6 +214,7 @@ class KnowledgeBase(CollectionManagerMixin):
             if not learning_id:
                 learning_id = str(uuid.uuid4())
 
+            # Use UUIDv5 for deterministic but unique point IDs
             point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(learning_id)))
 
             self.client.upsert(
@@ -243,14 +245,18 @@ class KnowledgeBase(CollectionManagerMixin):
             Path to the saved learning file.
         """
         # Generate ID
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        # Generate ID with high resolution and entropy to prevent collisions
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+        random_suffix = os.urandom(4).hex()
+        learning_id = f"{timestamp}-{random_suffix}"
+        
         category = learning.get("category", "general").lower().replace(" ", "-")
-        filename = f"{timestamp}-{category}.json"
+        filename = f"{learning_id}-{category}.json"
         filepath = os.path.join(self.knowledge_dir, filename)
 
         # Add metadata
         learning["created_at"] = datetime.now().isoformat()
-        learning["id"] = timestamp
+        learning["id"] = learning_id
 
         from filelock import FileLock
 
