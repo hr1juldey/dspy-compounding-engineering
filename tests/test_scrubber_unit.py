@@ -79,7 +79,7 @@ def test_scrub_aws_access_key(scrubber):
 
 def test_scrub_aws_secret_key(scrubber):
     # Pattern requires boundaries now
-    text = "secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" 
+    text = "secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
     assert "[REDACTED_AWS_SECRET_KEY]" in scrubber.scrub(text)
 
 

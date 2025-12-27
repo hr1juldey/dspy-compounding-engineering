@@ -25,7 +25,8 @@ class SecretScrubber:
             "aws_secret_key": r"(?<=[:=\s])([a-zA-Z0-9/+=]{40})(?=\s|$)",
             "slack_token": r"xox[baprs]-[0-9a-zA-Z]{10,48}",
             "ssh_private_key": (
-                r"-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP|ENCRYPTED)? ?PRIVATE KEY(?: BLOCK)?-----[\s\S]+?"
+                r"-----BEGIN (?:RSA|OPENSSH|DSA|EC|PGP|ENCRYPTED)? ?PRIVATE KEY(?: BLOCK)?-----"
+                r"[\s\S]+?"
                 r"-----END (?:RSA|OPENSSH|DSA|EC|PGP|ENCRYPTED)? ?PRIVATE KEY(?: BLOCK)?-----"
             ),
             "email": r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",

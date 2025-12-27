@@ -1,4 +1,3 @@
-
 def get_system_status() -> str:
     """
     Get the current health and status of external services (Qdrant, API keys).
@@ -6,6 +5,7 @@ def get_system_status() -> str:
     """
     try:
         from config import registry
+
         qdrant_ok = registry.check_qdrant()
         keys_ok = registry.check_api_keys()
 

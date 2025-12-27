@@ -5,11 +5,11 @@ import pytest
 
 # Inject mocks before ANY internal imports
 from utils.context.project import ProjectContext
-from utils.security.scrubber import SecretScrubber
 
 # from .mock_modules import patch_all ... already happens on import
 from utils.knowledge.core import KnowledgeBase
 from utils.knowledge.indexer import CodebaseIndexer
+from utils.security.scrubber import SecretScrubber
 
 
 @pytest.fixture

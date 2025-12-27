@@ -103,9 +103,7 @@ class ServiceRegistry:
             self._status["qdrant_available"] = False
             # Only print if we are not in a quiet mode or explicitly checking
             if not os.getenv("COMPOUNDING_QUIET"):
-                logger.warning(
-                    "Qdrant not available. Falling back to simple keyword search."
-                )
+                logger.warning("Qdrant not available. Falling back to simple keyword search.")
         return self._status["qdrant_available"]
 
     def check_api_keys(self, force: bool = False) -> bool:  # noqa: C901

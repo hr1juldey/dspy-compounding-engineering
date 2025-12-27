@@ -1,5 +1,6 @@
 from utils.io.safe import run_safe_command
 
+
 def test_command_allowlist():
     """Manual/Automated check for command allowlist."""
     try:
@@ -14,7 +15,8 @@ def test_command_allowlist():
         run_safe_command(["git", "status"], capture_output=True)
         print("SUCCESS: Authorized command was allowed.")
     except ValueError as e:
-        raise RuntimeError(f"ERROR: Authorized command was blocked: {e}")
+        raise RuntimeError(f"ERROR: Authorized command was blocked: {e}") from e
+
 
 if __name__ == "__main__":
     test_command_allowlist()

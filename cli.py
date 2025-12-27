@@ -1,7 +1,7 @@
+import math
 from pathlib import Path
 from typing import Annotated, Optional
 
-import math
 import typer
 from rich.console import Console
 

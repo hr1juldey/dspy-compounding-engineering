@@ -12,8 +12,8 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 from rich.console import Console
-from ..io.logger import logger
 
+from ..io.logger import logger
 from .compression import LLMKBCompressor
 
 console = Console()

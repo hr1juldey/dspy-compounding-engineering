@@ -1,8 +1,8 @@
+import logging
 import os
 from typing import List
 
 import dspy
-import logging
 
 
 class CompressMarkdown(dspy.Signature):

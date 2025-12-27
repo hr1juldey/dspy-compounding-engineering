@@ -1,8 +1,10 @@
 import os
 from typing import Optional
+
 from rich.console import Console
 
 console = Console()
+
 
 class SystemLogger:
     """
@@ -38,6 +40,7 @@ class SystemLogger:
     def status(msg: str):
         """Returns a status context for rich."""
         return console.status(msg)
+
 
 # Global singleton
 logger = SystemLogger()

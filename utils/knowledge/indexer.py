@@ -11,8 +11,6 @@ import subprocess
 import uuid
 from typing import Any, Dict, List
 
-from ..io.safe import run_safe_command
-
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     FieldCondition,
@@ -22,9 +20,10 @@ from qdrant_client.models import (
 )
 from rich.console import Console
 
+from ..io.logger import logger
+from ..io.safe import run_safe_command
 from .embeddings import EmbeddingProvider
 from .utils import CollectionManagerMixin
-from ..io.logger import logger
 
 console = Console()
 
@@ -207,9 +206,7 @@ class CodebaseIndexer(CollectionManagerMixin):
                 except Exception as e:
                     console.print(f"[dim red]Failed to index {filepath}: {e}[/dim red]")
 
-        logger.success(
-            f"Indexing complete. Updated: {updated_count}, Skipped: {skipped_count}"
-        )
+        logger.success(f"Indexing complete. Updated: {updated_count}, Skipped: {skipped_count}")
 
     def _index_single_file(
         self, filepath: str, full_path: str, indexed_files: Dict[str, float]
@@ -286,9 +283,7 @@ class CodebaseIndexer(CollectionManagerMixin):
             query_vector = self.embedding_provider.get_embedding(query)
 
             search_result = self.client.query_points(
-                collection_name=self.collection_name,
-                query=query_vector,
-                limit=limit
+                collection_name=self.collection_name, query=query_vector, limit=limit
             ).points
 
             # Returning chunks is usually better for specific context.

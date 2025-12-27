@@ -23,12 +23,12 @@ from qdrant_client.models import (
 )
 from rich.console import Console
 
+from ..io.logger import logger
+from ..security.scrubber import scrubber
 from .docs import KnowledgeDocumentation
 from .embeddings import EmbeddingProvider
 from .indexer import CodebaseIndexer
 from .utils import CollectionManagerMixin
-from ..security.scrubber import scrubber
-from ..io.logger import logger
 
 console = Console()
 
@@ -251,7 +251,7 @@ class KnowledgeBase(CollectionManagerMixin):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
         random_suffix = os.urandom(4).hex()
         learning_id = f"{timestamp}-{random_suffix}"
-        
+
         category = learning.get("category", "general").lower().replace(" ", "-")
         filename = f"{learning_id}-{category}.json"
         filepath = os.path.join(self.knowledge_dir, filename)

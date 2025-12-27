@@ -64,6 +64,7 @@ include = ["agents", "workflows", "utils", "cli.py", "config.py"]
 [dependency-groups]
 dev = [
     "ruff>=0.14.7",
+    "pre-commit>=3.6.0",
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.5.0",
     "mkdocstrings[python]>=0.24.0",

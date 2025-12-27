@@ -12,7 +12,7 @@ def validate_path(path: str, base_dir: str = ".") -> str:
     """Validate path is relative and within base_dir, preventing traversal."""
     # Ensure base_dir is absolute and symlinks are resolved
     base_abs = os.path.realpath(os.path.abspath(base_dir))
-    
+
     # Check for path traversal attempts in the raw string
     if ".." in path.split(os.sep) or path.startswith("/") or "://" in path:
         # We allow absolute paths if they are within base_dir, handled by resolution below.

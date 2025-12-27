@@ -83,11 +83,11 @@ def test_search_codebase_uses_query_points(indexer, mock_client):
     mock_hit = MagicMock()
     mock_hit.payload = {"path": "test.py"}
     mock_hit.score = 0.99
-    
+
     mock_client.query_points.return_value.points = [mock_hit]
-    
+
     results = indexer.search_codebase("find tests")
-    
+
     assert len(results) == 1
     assert results[0]["path"] == "test.py"
     assert results[0]["score"] == 0.99

@@ -25,9 +25,9 @@ from agents.review import (
 )
 from utils.context import ProjectContext
 from utils.git import GitService
+from utils.io.logger import logger
 from utils.knowledge import KBPredict
 from utils.todo import create_finding_todo
-from utils.io.logger import logger
 
 console = Console()
 

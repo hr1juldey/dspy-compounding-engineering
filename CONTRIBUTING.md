@@ -28,7 +28,7 @@ cd dspy-compounding-engineering
 # Install dependencies including dev tools
 uv sync --group dev
 
-# Install pre-commit hooks (optional but recommended)
+# Install pre-commit hooks
 uv run pre-commit install
 ```
 
