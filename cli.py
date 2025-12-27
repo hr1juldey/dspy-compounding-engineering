@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -193,7 +194,7 @@ def compress_kb(
         raise ValueError("Ratio must be a number")
     if not (0.0 <= ratio <= 1.0):
         raise ValueError("Ratio must be between 0.0 and 1.0")
-    if not (ratio == ratio and ratio != float("inf") and ratio != float("-inf")):
+    if not math.isfinite(ratio):
         raise ValueError("Ratio must be a finite number (not NaN or infinity)")
 
     kb = KnowledgeBase()

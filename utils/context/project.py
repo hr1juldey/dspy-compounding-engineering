@@ -13,8 +13,9 @@ from rich.console import Console
 
 from config import CONTEXT_OUTPUT_RESERVE, CONTEXT_WINDOW_LIMIT, TIER_1_FILES, get_project_root
 from utils.context.scorer import RelevanceScorer
-from utils.context.scrubber import scrubber
+from utils.io.logger import logger
 from utils.io.safe import validate_path
+from utils.security.scrubber import scrubber
 from utils.token.counter import TokenCounter
 
 console = Console()
@@ -54,8 +55,8 @@ class ProjectContext:
             context_parts.append(
                 f"Project files: {', '.join(f for f in files if not f.startswith('.'))}"
             )
-        except Exception:
-            pass
+        except Exception as e:
+            console.log(f"[warning]Failed to list project files in '{self.base_dir}': {e}")
 
         key_files = ["README.md", "pyproject.toml", "package.json", "requirements.txt"]
         for kf in key_files:
@@ -65,8 +66,8 @@ class ProjectContext:
                     with open(kf_path, "r") as f:
                         content = f.read()[:1000]
                     context_parts.append(f"\n--- {kf} ---\n{content}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    console.log(f"[warning]Failed to read key project file '{kf_path}': {e}")
 
         return "\n".join(context_parts) if context_parts else "No project context available"
 
@@ -146,7 +147,7 @@ class ProjectContext:
                 else:
                     skipped_count += 1
             except Exception as e:
-                print(f"[yellow]Warning: Failed to process {filepath}: {e}[/yellow]")
+                logger.warning(f"Failed to process {filepath}: {e}")
                 skipped_count += 1
 
         # Summary footer (not scored, usually fits)
@@ -189,7 +190,7 @@ class ProjectContext:
                         score = self.scorer.score_path(rel_path, task)
                         candidates.append((filepath, score, stat.st_mtime, stat.st_size))
                     except Exception as e:
-                        print(f"[yellow]Warning: Failed to stat {filepath}: {e}[/yellow]")
+                        logger.warning(f"Failed to stat {filepath}: {e}")
         return candidates
 
     def _is_safe_path(self, filepath: str) -> bool:

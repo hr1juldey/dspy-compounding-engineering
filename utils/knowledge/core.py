@@ -23,6 +23,8 @@ from qdrant_client.models import (
 )
 from rich.console import Console
 
+from ..io.logger import logger
+from ..security.scrubber import scrubber
 from .docs import KnowledgeDocumentation
 from .embeddings import EmbeddingProvider
 from .indexer import CodebaseIndexer
@@ -106,9 +108,11 @@ class KnowledgeBase(CollectionManagerMixin):
             return False
 
     def _sanitize_text(self, text: str) -> str:
-        """Sanitize text for embedding generation."""
+        """Sanitize and scrub text for embedding generation."""
         if not text:
             return ""
+        # Scrub PII/Secrets
+        text = scrubber.scrub(text)
         # Remove null bytes and control characters (except common whitespace)
         text = "".join(ch for ch in text if ch == "\n" or ch == "\r" or ch == "\t" or ch >= " ")
         # Limit length to prevent DOS/OOM (approx 8k tokens safe limit)
@@ -228,9 +232,7 @@ class KnowledgeBase(CollectionManagerMixin):
                 ],
             )
         except Exception as e:
-            console.print(
-                f"[red]Error indexing learning {learning.get('id', 'unknown')}: {e}[/red]"
-            )
+            logger.error(f"Error indexing learning {learning.get('id', 'unknown')}", str(e))
 
     def save_learning(self, learning: Dict[str, Any], silent: bool = False) -> str:
         """
@@ -249,7 +251,7 @@ class KnowledgeBase(CollectionManagerMixin):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
         random_suffix = os.urandom(4).hex()
         learning_id = f"{timestamp}-{random_suffix}"
-        
+
         category = learning.get("category", "general").lower().replace(" ", "-")
         filename = f"{learning_id}-{category}.json"
         filepath = os.path.join(self.knowledge_dir, filename)
@@ -273,9 +275,7 @@ class KnowledgeBase(CollectionManagerMixin):
                 self._index_learning(learning)
 
                 if not silent:
-                    console.print(
-                        f"[green]✓ Learning saved to {filepath} and indexed in Qdrant[/green]"
-                    )
+                    logger.success(f"Learning saved to {filepath} and indexed in Qdrant")
 
                 # 3. Update Docs
                 self.docs_service.update_ai_md(self.get_all_learnings(), silent=silent)

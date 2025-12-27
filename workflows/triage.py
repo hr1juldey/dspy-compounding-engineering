@@ -50,7 +50,9 @@ def validate_references(content: str, todos_dir: str) -> bool:
         # Check if any file in todos_dir starts with this ID
         matches = glob.glob(os.path.join(todos_dir, f"{todo_id}-*.md"))
         if not matches:
-            console.print(f"[yellow]Warning: Referenced Todo ID {todo_id} not found in {todos_dir}[/yellow]")
+            console.print(
+                f"[yellow]Warning: Referenced Todo ID {todo_id} not found in {todos_dir}[/yellow]"
+            )
             return False
     return True
 
@@ -185,7 +187,7 @@ def run_triage():  # noqa: C901
 
                 # Validate references before codifying
                 validate_references(content, todos_dir)
-                
+
                 # Codify triage decision
                 from utils.knowledge import codify_triage_decision
 

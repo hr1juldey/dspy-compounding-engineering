@@ -28,11 +28,17 @@ cd dspy-compounding-engineering
 # Install dependencies including dev tools
 uv sync --group dev
 
-# Install pre-commit hooks (optional but recommended)
+# Install pre-commit hooks
 uv run pre-commit install
 ```
 
 ### 3. Create a Branch
+
+All pull requests must come from branches using one of the following prefixes:
+- `feature/`: New functionality
+- `fix/`: Bug fixes
+- `testing/`: Test expansion or verification
+- `chore/`: Maintenance and infrastructure
 
 ```bash
 git checkout -b feature/your-feature-name
@@ -156,15 +162,25 @@ Add your agent to `docs/usage/review.md`.
 
 ### 1. Write Good Commit Messages
 
-```bash
-# Good
-git commit -m "feat: Add performance review agent for database queries"
-git commit -m "fix: Handle missing .env file gracefully"
-git commit -m "docs: Update installation guide for Windows"
+We strictly follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) standard. Every commit must be prefixed with a type:
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation changes
+- `style`: Formatting/Linting (no logic change)
+- `refactor`: Code reorganization
+- `test`: Adding or fixing tests
+- `chore`: Maintenance tasks (dependencies, CI, metadata)
 
-# Follow conventional commits
-# feat: | fix: | docs: | test: | refactor: | chore:
+**Example**: `feat(security): implement path traversal protection`
+
+### 2. Interactive Rebase Before Merging
+Before merging your branch into `dev`, please use an interactive rebase to clean up your history into clean, logical blocks. 
+
+```bash
+# Clean up your history relative to dev
+git rebase -i dev
 ```
+Use `squash` or `fixup` to remove "noisy" commits (fix typos, work-in-progress).
 
 ### 2. Create a Pull Request
 
@@ -182,7 +198,7 @@ git commit -m "docs: Update installation guide for Windows"
 
 ### 4. Merge
 
-Once approved, a maintainer will merge your PR!
+We use a **Squash and Merge** workflow for all Pull Requests targeting the `master` branch. This ensures our release history remains clean and readable for public users.
 
 ## Testing Guidelines
 
