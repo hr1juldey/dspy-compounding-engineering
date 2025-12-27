@@ -1,5 +1,8 @@
 name: Automated Release Tagging
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:

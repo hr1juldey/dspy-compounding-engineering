@@ -1,5 +1,5 @@
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from utils.io.logger import SystemLogger
 
 def test_logger_info_output():

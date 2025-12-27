@@ -1,6 +1,6 @@
 import pytest
 import os
-from pathlib import Path
+
 from utils.io.safe import run_safe_command, validate_path
 
 def test_run_safe_command_allowed():
