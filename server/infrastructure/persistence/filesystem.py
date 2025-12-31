@@ -1,0 +1,1 @@
+# .qwen/, .claude/, plans/, todos/

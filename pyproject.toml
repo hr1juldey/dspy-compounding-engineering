@@ -65,7 +65,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-include = ["agents", "workflows", "utils", "cli.py", "config.py"]
+include = ["agents", "workflows", "utils", "server", "cli.py", "config.py"]
 
 [dependency-groups]
 dev = [
@@ -91,8 +91,16 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
+    "TID", # 👈 import discipline
 ]
-ignore = []
+ignore = [
+   ## "TID252", # ❌ TEMPORARY — see next section
+]
 
 [tool.ruff.lint.isort]
-known-first-party = ["agents", "workflows", "utils"]
+known-first-party = ["agents", "workflows", "utils", "server"]
+
+[tool.ruff.lint.per-file-ignores]
+"agents/**" = ["TID252"]
+"utils/**" = ["TID252"]
+"workflows/**" = ["TID252"]
