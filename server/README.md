@@ -80,15 +80,19 @@ Humans can contribute to the compounding effect through:
 ## Key Features
 
 ### 1. Auto-Learning
+
 Every task completion automatically strengthens the system by capturing learnings in the knowledge base.
 
 ### 2. KB Auto-Injection
+
 Past learnings automatically inform all AI operations, preventing repeated mistakes.
 
 ### 3. Pattern Recognition
+
 The system identifies similar issues and applies past resolutions automatically.
 
 ### 4. Knowledge Accumulation
+
 The system gets smarter with every use, making future tasks easier.
 
 ## Getting Started
