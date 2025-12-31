@@ -47,3 +47,4 @@ services:
 
 volumes:
   qdrant_data:
+  redis_data:
