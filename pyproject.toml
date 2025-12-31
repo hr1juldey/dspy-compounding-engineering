@@ -101,6 +101,7 @@ select = [
 ]
 ignore = [
    ## "TID252", # ❌ TEMPORARY — see next section
+   "C901",
 ]
 
 [tool.ruff.lint.isort]
