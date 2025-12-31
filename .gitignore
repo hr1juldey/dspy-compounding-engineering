@@ -25,7 +25,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
+# redis data
+.redis_data/
 # Virtual environments
 venv/
 ENV/

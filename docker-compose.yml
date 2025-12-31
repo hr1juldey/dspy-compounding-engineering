@@ -4,11 +4,9 @@ services:
     image: dspy-ce:latest
     volumes:
       - ./:/app
-      # Mount .knowledge to ensure learnings are persisted if not in root
       - ./.knowledge:/app/.knowledge
     env_file:
       - .env
-    # Use host network to access local LLM providers (e.g. Ollama on localhost:11434)
     network_mode: "host"
     profiles: [ "cli" ]
 
@@ -21,14 +19,31 @@ services:
     profiles:
       - qdrant
 
-  # Optional: Dev shell service that overrides entrypoint
+  redis:
+    image: redis:7-alpine
+    container_name: compounding-engineering-redis
+    network_mode: "host"
+    command: >
+      redis-server
+      --port 6350
+      --appendonly yes
+      --dir /data
+    volumes:
+      - .redis_data/data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6350", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   dev:
     build: .
-    # volumes:
-    #   - ./:/app
     env_file:
       - .env
     network_mode: "host"
     entrypoint: [ "/bin/bash" ]
     stdin_open: true
     tty: true
+
+volumes:
+  qdrant_data:

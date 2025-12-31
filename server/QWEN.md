@@ -215,3 +215,33 @@ class MassiveClass:
 ```
 
 ---
+
+## Technology Reference Guide
+
+When working with technologies in the server codebase, refer to the following documentation files for detailed information:
+
+### FastMCP (Model Context Protocol)
+- **Documentation**: [FastMCP Documentation](../docs/technologies/fastmcp.md)
+- **Role**: Provides standardized way to connect AI models to external tools, resources, and services
+
+### DSPy (Declarative Self-improving Language Programs)
+- **Documentation**: [DSPy Documentation](../docs/technologies/dspy.md)
+- **Role**: Core intelligence layer for multi-agent systems and self-improving AI pipelines
+
+### Qdrant Vector Database
+- **Documentation**: [Qdrant Documentation](../docs/technologies/qdrant.md)
+- **Role**: Powers the knowledge base and semantic search capabilities
+
+### DSPy-Qdrant Integration
+- **Documentation**: [DSPy-Qdrant Documentation](../docs/technologies/dspy-qdrant.md)
+- **Role**: Enables semantic search within DSPy applications
+
+### FastAPI
+- **Documentation**: [FastAPI Documentation](../docs/technologies/fastapi.md)
+- **Role**: Framework for building the server's API endpoints
+
+### Celery
+- **Documentation**: [Celery Documentation](../docs/technologies/celery.md)
+- **Role**: Handles background tasks and asynchronous job processing
+
+---
