@@ -1,7 +1,7 @@
 import dspy
 
 from agents.research.schema import RepoResearchReport
-from utils.agent.tools import get_research_tools
+from utils.agent.tools import get_graphrag_research_tools
 from utils.io.logger import logger
 
 
@@ -72,8 +72,8 @@ class RepoResearchAnalystModule(dspy.Module):
 
     def __init__(self, base_dir: str = "."):
         super().__init__()
-        self.tools = get_research_tools(base_dir)
-        self.agent = dspy.ReAct(RepoResearchAnalyst, tools=self.tools, max_iters=3)
+        self.tools = get_graphrag_research_tools(base_dir)  # GraphRAG + semantic tools
+        self.agent = dspy.ReAct(RepoResearchAnalyst, tools=self.tools, max_iters=5)
 
     def forward(self, feature_description: str):
         logger.info(f"Starting Repo Research for: {feature_description}")

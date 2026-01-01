@@ -223,3 +223,18 @@ def get_todo_resolver_tools(base_dir: str = ".") -> list[dspy.Tool]:
         get_system_status_tool(),
         get_audit_logs_tool(),
     ]
+
+
+def get_graphrag_research_tools(base_dir: str = ".") -> list[dspy.Tool]:
+    """
+    Extended research tools with GraphRAG capabilities.
+
+    For research agents that need deep code analysis.
+    Combines semantic search with graph-based structural analysis.
+    """
+    from utils.agent.graphrag_tools import get_graphrag_tools
+
+    return [
+        *get_research_tools(base_dir),  # Existing semantic tools
+        *get_graphrag_tools(),  # GraphRAG deep analysis tools
+    ]

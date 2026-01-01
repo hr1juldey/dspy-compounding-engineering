@@ -191,6 +191,23 @@ class ServiceRegistry:
                 self._status["kb_cache"] = KnowledgeBase()
             return self._status["kb_cache"]
 
+    def get_mem0_memory(self, agent_name: str):
+        """
+        Get mem0 Memory instance for agent.
+
+        Args:
+            agent_name: Agent identifier (e.g., 'code_navigator')
+
+        Returns:
+            Memory instance configured for agent
+        """
+        from mem0 import Memory
+
+        from utils.memory.config import get_mem0_config
+
+        config = get_mem0_config(agent_name)
+        return Memory.from_config(config)
+
 
 registry = ServiceRegistry()
 
