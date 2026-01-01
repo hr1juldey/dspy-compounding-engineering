@@ -7,8 +7,8 @@ across all workflows (review, triage, work).
 
 import dspy
 
-from ..io.logger import console, logger
-from .core import KnowledgeBase
+from utils.io.logger import console, logger
+from utils.knowledge.core import KnowledgeBase
 
 
 def codify_learning(

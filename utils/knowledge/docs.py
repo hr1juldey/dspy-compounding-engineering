@@ -13,8 +13,8 @@ from typing import Any, Dict, List
 
 from rich.console import Console
 
-from ..io.logger import logger
-from .compression import LLMKBCompressor
+from utils.io.logger import logger
+from utils.knowledge.compression import LLMKBCompressor
 
 console = Console()
 

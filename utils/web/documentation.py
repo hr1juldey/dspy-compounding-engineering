@@ -8,7 +8,7 @@ import httpx
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
-from ..io.logger import logger
+from utils.io.logger import logger
 
 
 class PinnedTransport(httpx.HTTPTransport):

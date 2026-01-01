@@ -20,12 +20,12 @@ from qdrant_client.models import (
 )
 from rich.console import Console
 
-from ..io.logger import logger
-from ..io.safe import run_safe_command
-from .batch_embedder import BatchEmbedder
-from .embeddings import EmbeddingProvider
-from .semantic_chunker import SemanticChunker
-from .utils import CollectionManagerMixin
+from utils.io.logger import logger
+from utils.io.safe import run_safe_command
+from utils.knowledge.batch_embedder import BatchEmbedder
+from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.semantic_chunker import SemanticChunker
+from utils.knowledge.utils import CollectionManagerMixin
 
 console = Console()
 

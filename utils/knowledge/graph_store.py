@@ -21,7 +21,7 @@ from qdrant_client.models import (
 )
 
 from utils.io.logger import logger
-from utils.knowledge.embeddings import EmbeddingProvider
+from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
 from utils.knowledge.entity_extractor import Entity
 from utils.knowledge.utils import CollectionManagerMixin
 

@@ -13,7 +13,7 @@ from typing import Any, List, Optional
 
 import dspy
 
-from ..io.logger import logger
+from utils.io.logger import logger
 
 
 class KBPredict(dspy.Module):

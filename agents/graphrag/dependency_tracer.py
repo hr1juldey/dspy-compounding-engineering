@@ -13,7 +13,7 @@ import networkx as nx
 
 from agents.graphrag.schema import CycleInfo, DependencyReport, EntityDetails
 from config import get_project_hash, registry
-from utils.knowledge.embeddings import EmbeddingProvider
+from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
 from utils.knowledge.graph_rag import CodeGraphRAG
 from utils.knowledge.graph_store import GraphStore
 from utils.memory.module import MemoryPredict

@@ -3,7 +3,7 @@ from typing import Dict, List, Union
 
 from rich.console import Console
 
-from .safe import run_safe_command, safe_write, validate_path
+from utils.io.safe import run_safe_command, safe_write, validate_path
 
 console = Console()
 
