@@ -49,6 +49,8 @@ dependencies = [
     "celery>=5.6.1",
     "dspy-qdrant>=0.1.4",
     "sqlmodel>=0.0.31",
+    "networkx[default]>=3.6.1",
+    "mem0ai>=1.0.1",
 ]
 
 
