@@ -1,10 +1,10 @@
 """
-Memory gardener for maintaining mem0 memories.
+Agent Memory Maintainer.
 
-Scheduled tasks for:
-1. Compressing agent memories
-2. Indexing git commits as shared memory
-3. Pruning stale entity caches
+Scheduled maintenance for mem0 agent memories:
+1. Compress agent memories
+2. Index git commits as shared memory
+3. Prune stale entity caches (>7 days)
 """
 
 from utils.git.service import GitService
@@ -12,7 +12,7 @@ from utils.io.logger import logger
 from utils.memory.agent_memory import AgentMemory
 
 
-class MemoryGardener:
+class AgentMemoryMaintainer:
     """
     Maintains mem0 memories across all agents.
 
