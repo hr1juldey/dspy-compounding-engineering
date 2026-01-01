@@ -1,16 +1,17 @@
 """
-Semantic chunker orchestrator using AST → BestOfN(CoT) → ReAct → Refine.
+Semantic chunker: AST does heavy lifting, LLM validates.
 
-Coordinates intelligent code chunking that respects function/class boundaries.
+Architecture:
+1. AST generates deterministic chunking strategy (fast, free)
+2. Optional LLM validation/improvement (env var controlled)
+3. CoT + ReAct only when enabled (default: AST-only)
 """
 
 import os
 
-import dspy
-
 from utils.io.logger import logger
 from utils.knowledge.chunking_metrics import create_reward_function
-from utils.knowledge.chunking_strategies import ChunkingStrategyGenerator
+from utils.knowledge.chunking_strategies import ChunkBoundary, ChunkingStrategy
 from utils.knowledge.json_extractor import JSONExtractor
 from utils.knowledge.markdown_extractor import MarkdownExtractor
 from utils.knowledge.semantic_extractor import CodeStructure, PythonASTExtractor
@@ -18,11 +19,9 @@ from utils.knowledge.semantic_extractor import CodeStructure, PythonASTExtractor
 
 class SemanticChunker:
     """
-    Orchestrates semantic chunking using:
-    1. AST Parser (fast, deterministic)
-    2. BestOfN(ChainOfThought, N=3) (generate strategies)
-    3. ReAct (evaluate and decide)
-    4. Refine (conditional improvement)
+    Fast semantic chunking with optional LLM validation:
+    1. AST Parser (fast, deterministic) - PRIMARY
+    2. Optional LLM validator (CoT + ReAct) - SECONDARY
     """
 
     def __init__(self, target_size: int | None = None, min_overlap: int | None = None):
@@ -34,12 +33,19 @@ class SemanticChunker:
         self.markdown_extractor = MarkdownExtractor()
         self.json_extractor = JSONExtractor()
 
-        self.strategy_generator = ChunkingStrategyGenerator()
+        # LLM validation (disabled by default for speed)
+        self.use_llm_validation = (
+            os.getenv("USE_LLM_CHUNKING_VALIDATION", "false").lower() == "true"
+        )
 
-        # Decision thresholds
-        self.EXCELLENT_THRESHOLD = 0.90
-        self.ACCEPTABLE_THRESHOLD = 0.75
-        self.REFINEMENT_THRESHOLD = 0.60
+        # Only load LLM modules if needed
+        if self.use_llm_validation:
+            import dspy
+
+            from utils.knowledge.chunking_strategies import ChunkingStrategyGenerator
+
+            self.strategy_generator = ChunkingStrategyGenerator()
+            self.dspy = dspy
 
     def chunk(self, code: str, filepath: str = "") -> list[str]:
         """
@@ -51,23 +57,18 @@ class SemanticChunker:
         try:
             # Precondition: Skip empty or very small files
             if not code or len(code.strip()) < 100:
-                logger.info(
-                    f"Skipping semantic chunking for small file ({len(code)} chars)",
-                    to_cli=True,
-                )
-                return self._fallback_chunking(code) if code else []
+                return []
 
-            # Precondition: Skip very large files (> 50KB) to avoid expensive LLM calls
-            if len(code) > 50000:
+            # Precondition: Skip very large files (> 500KB)
+            if len(code) > 500000:
                 logger.warning(f"File too large ({len(code)} chars), using fallback chunking")
                 return self._fallback_chunking(code)
 
-            # Step 1: Determine file type and extract structure (case-insensitive)
+            # Determine file type (case-insensitive)
             file_ext = filepath.lower().split(".")[-1] if "." in filepath else ""
 
             if file_ext == "md":
                 # Markdown: Use deterministic section-based chunking
-                logger.info(f"Using Markdown chunking for {filepath}", to_cli=True)
                 md_structure = self.markdown_extractor.extract(code, filepath)
                 return self.markdown_extractor.chunk_by_sections(
                     code, md_structure, self.target_size
@@ -75,94 +76,172 @@ class SemanticChunker:
 
             if file_ext == "json":
                 # JSON: Use structure-based chunking
-                logger.info(f"Using JSON chunking for {filepath}", to_cli=True)
                 json_structure = self.json_extractor.extract(code, filepath)
                 return self.json_extractor.chunk_by_keys(code, json_structure, self.target_size)
 
-            # Python: Use AST + LLM-based semantic chunking
+            # Python: AST-based with optional LLM validation
             structure = self.ast_extractor.extract(code, filepath)
 
-            # Step 2: Generate 3 strategies using BestOfN(CoT)
-            best_strategy, best_score = self._generate_best_strategy(code, structure)
+            # Step 1: AST creates deterministic strategy (FAST, always runs)
+            ast_strategy = self._ast_chunking_strategy(code, structure)
 
-            # Step 3: ReAct evaluation and decision
-            if best_score >= self.EXCELLENT_THRESHOLD:
-                logger.info(f"Excellent chunking (score={best_score:.2f}), accepting", to_cli=True)
-                return self._strategy_to_chunks(best_strategy)
-
-            if best_score >= self.ACCEPTABLE_THRESHOLD:
-                logger.info(f"Acceptable chunking (score={best_score:.2f}), accepting", to_cli=True)
-                return self._strategy_to_chunks(best_strategy)
-
-            if best_score >= self.REFINEMENT_THRESHOLD:
-                logger.info(
-                    f"Mediocre chunking (score={best_score:.2f}), attempting refinement",
-                    to_cli=True,
-                )
-                # Step 4: Refine (conditional)
-                refined_strategy = self._refine_strategy(best_strategy, structure, code)
-                return self._strategy_to_chunks(refined_strategy)
-
-            logger.warning(
-                f"Semantic chunking failed (score={best_score:.2f}), using fallback",
-                to_cli=True,
+            # Step 2: Score AST strategy
+            lines = code.split("\n")
+            reward_fn = create_reward_function(structure, lines)
+            ast_score = reward_fn(
+                args={"code": code, "ast_structure": structure},
+                pred=type("obj", (object,), {"chunking_strategy": ast_strategy})(),
             )
-            return self._fallback_chunking(code)
+
+            # Step 3: If AST is good, accept it. If bad, LLM redoes it.
+            ACCEPT_THRESHOLD = 0.75
+
+            if ast_score >= ACCEPT_THRESHOLD:
+                # AST is good enough, use it
+                logger.info(f"AST chunking good (score={ast_score:.2f}), accepting")
+                return self._strategy_to_chunks(ast_strategy)
+
+            # AST failed, use LLM to redo (only if enabled)
+            if self.use_llm_validation:
+                logger.info(f"AST chunking bad (score={ast_score:.2f}), LLM redoing")
+                llm_strategy = self._llm_redo_strategy(code, structure)
+                return self._strategy_to_chunks(llm_strategy)
+
+            # LLM disabled but AST failed - log warning and use AST anyway
+            logger.warning(f"AST chunking mediocre (score={ast_score:.2f}), but LLM disabled")
+            return self._strategy_to_chunks(ast_strategy)
 
         except Exception as e:
             logger.error(f"Semantic chunking error: {e}", detail=str(e))
             return self._fallback_chunking(code)
 
-    def _generate_best_strategy(self, code: str, structure: CodeStructure) -> tuple:
+    def _ast_chunking_strategy(self, code: str, structure: CodeStructure) -> ChunkingStrategy:
         """
-        Generate 3 chunking strategies using BestOfN(ChainOfThought).
+        AST creates deterministic chunking strategy (NO LLM calls).
 
         Returns:
-            (best_strategy, best_score)
+            ChunkingStrategy with ChunkBoundary objects
         """
         lines = code.split("\n")
-        reward_fn = create_reward_function(structure, lines)
+        chunks = []
 
-        # Wrap generator in BestOfN
-        best_of_n = dspy.BestOfN(
-            module=self.strategy_generator,
-            N=3,
-            reward_fn=reward_fn,
-            threshold=self.EXCELLENT_THRESHOLD,
+        # Build list of code units with boundaries
+        units = []
+
+        # Add imports
+        import_lines = [imp["line"] for imp in structure.imports]
+        if import_lines:
+            units.append(
+                {
+                    "type": "imports",
+                    "start": min(import_lines),
+                    "end": max(import_lines) + 1,
+                    "name": "imports",
+                }
+            )
+
+        # Add functions
+        for func in structure.functions:
+            units.append(
+                {
+                    "type": "function",
+                    "start": func["start"],
+                    "end": func["end"],
+                    "name": func["name"],
+                }
+            )
+
+        # Add classes
+        for cls in structure.classes:
+            units.append(
+                {"type": "class", "start": cls["start"], "end": cls["end"], "name": cls["name"]}
+            )
+
+        # Sort by start line
+        units.sort(key=lambda u: u["start"])
+
+        # Build chunks respecting unit boundaries
+        current_chunk_lines = []
+        current_start_line = 1
+
+        for unit in units:
+            # Add filler lines
+            if current_start_line < unit["start"]:
+                filler = lines[current_start_line - 1 : unit["start"] - 1]
+                current_chunk_lines.extend(filler)
+
+            # Add unit lines
+            unit_lines = lines[unit["start"] - 1 : unit["end"]]
+            unit_size = sum(len(line) for line in unit_lines)
+            current_size = sum(len(line) for line in current_chunk_lines)
+
+            if current_chunk_lines and current_size + unit_size > self.target_size:
+                # Finalize chunk
+                chunk_text = "\n".join(current_chunk_lines)
+                if chunk_text.strip():
+                    chunks.append(
+                        ChunkBoundary(
+                            start_line=current_start_line,
+                            end_line=unit["start"] - 1,
+                            content=chunk_text,
+                            semantic_label=f"code_unit_{len(chunks)}",
+                            rationale="AST-based boundary",
+                        )
+                    )
+
+                # Start new chunk
+                current_chunk_lines = unit_lines
+                current_start_line = unit["start"]
+            else:
+                current_chunk_lines.extend(unit_lines)
+
+            current_start_line = unit["end"] + 1
+
+        # Add remaining lines
+        if current_start_line <= len(lines):
+            remaining = lines[current_start_line - 1 :]
+            current_chunk_lines.extend(remaining)
+
+        # Finalize last chunk
+        if current_chunk_lines:
+            chunk_text = "\n".join(current_chunk_lines)
+            if chunk_text.strip():
+                chunks.append(
+                    ChunkBoundary(
+                        start_line=current_start_line if chunks else 1,
+                        end_line=len(lines),
+                        content=chunk_text,
+                        semantic_label=f"code_unit_{len(chunks)}",
+                        rationale="AST-based boundary",
+                    )
+                )
+
+        # Fallback if no chunks created
+        if not chunks:
+            chunks.append(
+                ChunkBoundary(
+                    start_line=1,
+                    end_line=len(lines),
+                    content=code,
+                    semantic_label="full_file",
+                    rationale="No AST units found",
+                )
+            )
+
+        return ChunkingStrategy(
+            reasoning="AST-based deterministic chunking at function/class boundaries",
+            chunks=chunks,
+            confidence=0.85,
         )
 
-        # Generate and score strategies
-        result = best_of_n(
-            code=code,
-            ast_structure=structure,
-            target_chunk_size=self.target_size,
-            min_overlap=self.min_overlap,
-        )
-
-        # Calculate final score
-        score = reward_fn(args={"code": code, "ast_structure": structure}, pred=result)
-
-        return result.chunking_strategy, score
-
-    def _refine_strategy(self, strategy, structure: CodeStructure, code: str):
+    def _llm_redo_strategy(self, code: str, structure: CodeStructure) -> ChunkingStrategy:
         """
-        Use Refine module to improve strategy based on violations.
+        LLM redoes chunking when AST fails (SLOW, only when enabled).
 
-        Returns:
-            Refined strategy
+        Uses CoT + ReAct to generate better chunking strategy.
         """
-        lines = code.split("\n")
-        reward_fn = create_reward_function(structure, lines)
-
-        # Create Refine module
-        refine = dspy.Refine(
-            module=self.strategy_generator,
-            N=3,
-            reward_fn=reward_fn,
-            threshold=self.ACCEPTABLE_THRESHOLD,
-        )
-
-        result = refine(
+        # Use ChainOfThought to generate new strategy from scratch
+        result = self.strategy_generator(
             code=code,
             ast_structure=structure,
             target_chunk_size=self.target_size,
@@ -171,7 +250,7 @@ class SemanticChunker:
 
         return result.chunking_strategy
 
-    def _strategy_to_chunks(self, strategy) -> list[str]:
+    def _strategy_to_chunks(self, strategy: ChunkingStrategy) -> list[str]:
         """Convert ChunkingStrategy to List[str]"""
         return [chunk.content for chunk in strategy.chunks]
 

@@ -1,7 +1,8 @@
 import shutil
 import subprocess
 
-from ..io.safe import run_safe_command
+from utils.io.logger import logger
+from utils.io.safe import run_safe_command
 
 
 class GitService:
@@ -284,3 +285,180 @@ class GitService:
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Failed to create feature worktree: {e.stderr}") from e
+
+    @staticmethod
+    def get_pushed_commits(
+        branch: str = "HEAD", remote: str = "origin", limit: int = 100
+    ) -> list[str]:
+        """
+        Get commits that have been pushed to remote (GitHub).
+
+        Only returns commits that exist on the remote branch.
+        Excludes local-only commits.
+
+        Args:
+            branch: Branch name (default: HEAD)
+            remote: Remote name (default: origin)
+            limit: Max number of commits
+
+        Returns:
+            List of commit SHAs (newest first)
+        """
+        try:
+            # Get remote branch name
+            result = run_safe_command(
+                ["git", "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            if result.returncode != 0:
+                # No upstream branch set, try origin/branch
+                result = run_safe_command(
+                    ["git", "rev-parse", "--abbrev-ref", branch],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                local_branch = result.stdout.strip()
+                remote_branch = f"{remote}/{local_branch}"
+            else:
+                remote_branch = result.stdout.strip()
+
+            # Get commits on remote branch
+            result = run_safe_command(
+                ["git", "log", f"{remote_branch}", "--format=%H", f"-{limit}"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            commits = result.stdout.strip().split("\n")
+            commits = [c for c in commits if c]  # Filter empty strings
+
+            logger.info(f"Found {len(commits)} pushed commits on {remote_branch}")
+            return commits
+
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to get pushed commits: {e}")
+            return []
+
+    @staticmethod
+    def is_commit_pushed(commit_sha: str, remote: str = "origin") -> bool:
+        """
+        Check if a commit has been pushed to remote.
+
+        Args:
+            commit_sha: Commit SHA
+            remote: Remote name (default: origin)
+
+        Returns:
+            True if commit exists on any remote branch
+        """
+        try:
+            # Check if commit exists on remote
+            result = run_safe_command(
+                ["git", "branch", "-r", "--contains", commit_sha],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            # Check if any remote branches contain this commit
+            remote_branches = result.stdout.strip().split("\n")
+            has_pushed = any(remote in branch for branch in remote_branches if branch.strip())
+
+            return has_pushed
+
+        except subprocess.CalledProcessError:
+            return False
+
+    @staticmethod
+    def get_commit_metadata(commit_sha: str) -> dict:
+        """
+        Get metadata for a commit.
+
+        Args:
+            commit_sha: Commit SHA
+
+        Returns:
+            Dict with author, email, date, message
+        """
+        try:
+            result = run_safe_command(
+                ["git", "show", "--format=%an|%ae|%at|%s", "--no-patch", commit_sha],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            parts = result.stdout.strip().split("|", 3)
+            if len(parts) < 4:
+                return {}
+
+            author, email, timestamp, message = parts
+
+            return {
+                "author": author,
+                "email": email,
+                "date": int(timestamp),
+                "message": message,
+                "sha": commit_sha,
+            }
+
+        except (subprocess.CalledProcessError, ValueError) as e:
+            logger.warning(f"Failed to get commit metadata for {commit_sha}: {e}")
+            return {}
+
+    @staticmethod
+    def get_file_at_commit(commit_sha: str, file_path: str) -> str | None:
+        """
+        Get file contents at a specific commit.
+
+        Args:
+            commit_sha: Commit SHA
+            file_path: File path
+
+        Returns:
+            File contents or None if not found
+        """
+        try:
+            result = run_safe_command(
+                ["git", "show", f"{commit_sha}:{file_path}"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            return result.stdout
+
+        except subprocess.CalledProcessError:
+            # File doesn't exist at this commit
+            return None
+
+    @staticmethod
+    def get_changed_files_in_commit(commit_sha: str) -> list[str]:
+        """
+        Get list of files changed in a commit.
+
+        Args:
+            commit_sha: Commit SHA
+
+        Returns:
+            List of file paths
+        """
+        try:
+            result = run_safe_command(
+                ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", commit_sha],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            files = result.stdout.strip().split("\n")
+            return [f for f in files if f.strip()]
+
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to get changed files for {commit_sha}: {e}")
+            return []
