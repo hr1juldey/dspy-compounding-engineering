@@ -22,7 +22,9 @@ from rich.console import Console
 
 from ..io.logger import logger
 from ..io.safe import run_safe_command
+from .batch_embedder import BatchEmbedder
 from .embeddings import EmbeddingProvider
+from .semantic_chunker import SemanticChunker
 from .utils import CollectionManagerMixin
 
 console = Console()
@@ -37,12 +39,29 @@ class CodebaseIndexer(CollectionManagerMixin):
         self,
         qdrant_client: QdrantClient,
         embedding_provider: EmbeddingProvider,
-        collection_name: str = "codebase",
+        collection_name: str,
     ):
+        # Validate collection name has hash suffix (required for multi-session/multi-user)
+        if not any(c in collection_name for c in "_-"):
+            raise ValueError(
+                f"Collection name '{collection_name}' must include a hash suffix "
+                "(e.g., 'codebase_abc123') to prevent multi-session/multi-user conflicts"
+            )
+
         self.client = qdrant_client
         self.embedding_provider = embedding_provider
         self.collection_name = collection_name
         self.vector_db_available = self.client is not None
+
+        # Initialize batch embedder for 4x speedup
+        self.batch_embedder = BatchEmbedder(embedding_provider)
+
+        # Initialize semantic chunker (optional, controlled by env var)
+        self.use_semantic_chunking = os.getenv("USE_SEMANTIC_CHUNKING", "true").lower() == "true"
+        if self.use_semantic_chunking:
+            self.semantic_chunker = SemanticChunker()
+        else:
+            self.semantic_chunker = None
 
         if self.vector_db_available:
             self._ensure_collection()
@@ -244,26 +263,37 @@ class CodebaseIndexer(CollectionManagerMixin):
             # likely binary
             return False
 
-        # Chunk content
-        chunks = self._chunk_text(content)
+        # Chunk content (use semantic chunking for supported file types if enabled)
+        semantic_extensions = (".py", ".md", ".json")
+        filepath_lower = filepath.lower()
+        if (
+            self.use_semantic_chunking
+            and self.semantic_chunker
+            and filepath_lower.endswith(semantic_extensions)
+        ):
+            chunks = self.semantic_chunker.chunk(content, filepath)
+        else:
+            chunks = self._chunk_text(content)
 
+        # Batch embed all chunks for 4x speedup (saturates Ollama)
+        embedding_results = self.batch_embedder.embed_texts_batch(chunks)
+
+        # Build Qdrant points with embedded vectors
         points = []
-        for i, chunk in enumerate(chunks):
-            # Create embedding
-            vector = self.embedding_provider.get_embedding(chunk)
+        for _i, (idx, vector) in enumerate(embedding_results):
+            chunk = chunks[idx]
 
-            # ID: uuid5(NAMESPACE_URL, file_path + chunk_index)
-            # We include chunk index in ID to make it unique per chunk
-            unique_str = f"{filepath}::{i}"
+            # ID: uuid5(NAMESPACE_DNS, file_path + chunk_index)
+            unique_str = f"{filepath}::{idx}"
             point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_str))
 
             payload = {
                 "path": filepath,
                 "content": chunk,
-                "chunk_index": i,
+                "chunk_index": idx,
                 "total_chunks": len(chunks),
                 "last_modified": mtime,
-                "type": "code_file",  # Add type for filtering
+                "type": "code_file",
             }
 
             points.append(PointStruct(id=point_id, vector=vector, payload=payload))

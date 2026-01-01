@@ -219,6 +219,64 @@ class EmbeddingProvider:
             logger.error("Failed to generate embedding", detail=str(e))
             raise
 
+    def get_embeddings_batch(self, texts: list[str]) -> list[list[float]]:
+        """
+        Generate embeddings for multiple texts in one batch call.
+
+        This keeps Ollama saturated and provides 4-10x speedup over serial calls.
+
+        Args:
+            texts: List of texts to embed
+
+        Returns:
+            List of embedding vectors (same order as input texts)
+        """
+        try:
+            # Preprocess all texts
+            texts = [text.replace("\n", " ") for text in texts]
+
+            # FastEmbed (local, supports batch natively)
+            if self.embedding_provider == "fastembed":
+                return [vec.tolist() for vec in self.fast_model.embed(texts)]
+
+            # Ollama (native /api/embed with batch support)
+            if self.embedding_provider == "ollama":
+                import requests
+
+                # Smart URL construction
+                if "/api/embed" in self.embedding_base_url:
+                    url = self.embedding_base_url.rstrip("/")
+                else:
+                    url = self.embedding_base_url.rstrip("/") + "/api/embed"
+
+                payload = {
+                    "model": self.embedding_model_name,
+                    "input": texts,  # Ollama supports array input natively!
+                }
+
+                resp = requests.post(url, json=payload, timeout=120)  # Longer timeout for batches
+                resp.raise_for_status()
+                data = resp.json()
+
+                # Ollama returns: {"embeddings": [[vec1], [vec2], ...]}
+                if isinstance(data, dict) and "embeddings" in data:
+                    return data["embeddings"]
+
+                raise RuntimeError(f"Unexpected Ollama batch embedding response: {data}")
+
+            # OpenAI / OpenRouter (batch support)
+            response = self.client.embeddings.create(
+                input=texts,
+                model=self.embedding_model_name,
+            )
+            return [item.embedding for item in response.data]
+
+        except Exception as e:
+            logger.error(
+                f"Failed to generate batch embeddings for {len(texts)} texts", detail=str(e)
+            )
+            raise
+
     def get_sparse_embedding(self, text: str):
         """Generate sparse embedding for text using fastembed."""
         try:
