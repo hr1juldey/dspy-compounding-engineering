@@ -68,7 +68,7 @@ full = [
 ]
 
 [project.scripts]
-compounding = "cli:app"
+ce = "cli:app"
 
 [build-system]
 requires = ["hatchling"]

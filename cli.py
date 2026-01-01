@@ -81,11 +81,11 @@ def analyze(
     Analyze code using GraphRAG agents.
 
     Examples:
-        compounding analyze CodeNavigatorModule --type navigate
-        compounding analyze process_request --type impact --change Delete
-        compounding analyze src.utils:target.function --type deps
-        compounding analyze . --type arch
-        compounding analyze start_query:end_query --type search
+        ce analyze CodeNavigatorModule --type navigate
+        ce analyze process_request --type impact --change Delete
+        ce analyze src.utils:target.function --type deps
+        ce analyze . --type arch
+        ce analyze start_query:end_query --type search
     """
     run_analyze(
         entity=entity,
@@ -165,9 +165,9 @@ def review(
     Perform exhaustive multi-agent code reviews.
 
     Examples:
-        compounding review              # Review local changes
-        compounding review --project    # Review entire project
-        compounding review 123          # Review PR #123
+        ce review              # Review local changes
+        ce review --project    # Review entire project
+        ce review 123          # Review PR #123
     """
     run_review(pr_url_or_id, project=project)
 
@@ -192,9 +192,9 @@ def generate_command(
     and generates all necessary code.
 
     Examples:
-        compounding generate-command "Create a command to format code"
-        compounding generate-command "Add a lint command that checks Python style"
-        compounding generate-command --dry-run "Create a deployment workflow"
+        ce generate-command "Create a command to format code"
+        ce generate-command "Add a lint command that checks Python style"
+        ce generate-command --dry-run "Create a deployment workflow"
     """
     run_generate_command(description=description, dry_run=dry_run)
 
@@ -217,8 +217,8 @@ def codify(
     them to the persistent knowledge base.
 
     Examples:
-        compounding codify "Always use strict typing in Python files"
-        compounding codify "We should use factory pattern for creating agents" --source retro
+        ce codify "Always use strict typing in Python files"
+        ce codify "We should use factory pattern for creating agents" --source retro
     """
     run_codify(feedback=feedback, source=source)
 
@@ -240,10 +240,10 @@ def check(
     - Ruff linting and formatting
 
     Examples:
-        compounding check                    # Check all Python files
-        compounding check --staged           # Check staged files only
-        compounding check src/ --fix         # Check and auto-fix src/
-        compounding check utils/policy/      # Check specific directory
+        ce check                    # Check all Python files
+        ce check --staged           # Check staged files only
+        ce check src/ --fix         # Check and auto-fix src/
+        ce check utils/policy/      # Check specific directory
     """
     exit_code = run_check(paths=paths, auto_fix=auto_fix, staged_only=staged_only)
     raise typer.Exit(code=exit_code)
@@ -260,10 +260,10 @@ def garden(
     Maintain and optimize the knowledge base.
 
     Examples:
-        compounding garden consolidate       # Clean up KB duplicates
-        compounding garden index-commits     # Index recent git commits
-        compounding garden compress-memory   # Compress agent memories
-        compounding garden all               # Run full maintenance
+        ce garden consolidate       # Clean up KB duplicates
+        ce garden index-commits     # Index recent git commits
+        ce garden compress-memory   # Compress agent memories
+        ce garden all               # Run full maintenance
     """
     run_garden(action=action, limit=limit)
 

@@ -4,7 +4,7 @@ services:
     image: dspy-ce:latest
     volumes:
       - ./:/app
-      - ./.knowledge:/app/.knowledge
+      - ./.compounding:/app/.compounding
     env_file:
       - .env
     network_mode: "host"
@@ -21,20 +21,28 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: redis
+    container_name: dspy-ce-redis
     network_mode: "host"
+    restart: unless-stopped
     command: >
       redis-server
       --port 6350
       --appendonly yes
+      --appendfsync everysec
       --dir /data
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
     volumes:
-      - .redis_data/data/redis:/data
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "6350", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10
+      start_period: 5s
 
   dev:
     build: .
