@@ -23,12 +23,12 @@ from qdrant_client.models import (
     PointStruct,
 )
 
-from ..io.logger import console, logger
-from ..security.scrubber import scrubber
-from .docs import KnowledgeDocumentation
-from .embeddings import EmbeddingProvider
-from .indexer import CodebaseIndexer
-from .utils import CollectionManagerMixin
+from utils.io.logger import console, logger
+from utils.knowledge.docs import KnowledgeDocumentation
+from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.indexer import CodebaseIndexer
+from utils.knowledge.utils import CollectionManagerMixin
+from utils.security.scrubber import scrubber
 
 
 class KnowledgeBase(CollectionManagerMixin):
@@ -41,10 +41,13 @@ class KnowledgeBase(CollectionManagerMixin):
     def __init__(
         self, knowledge_dir: Optional[str] = None, qdrant_client: Optional[QdrantClient] = None
     ):
-        from config import get_project_hash, get_project_root, registry
+        from config import get_project_hash, registry
+        from utils.paths import get_paths
 
         if knowledge_dir is None:
-            knowledge_dir = os.path.join(str(get_project_root()), ".knowledge")
+            # Use new centralized path management
+            paths = get_paths()
+            knowledge_dir = str(paths.knowledge_dir)
 
         self.knowledge_dir = os.path.abspath(knowledge_dir)
         self._ensure_knowledge_dir()

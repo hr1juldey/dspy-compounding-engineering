@@ -8,7 +8,10 @@ from rich.console import Console
 from config import configure_dspy
 from utils.io import get_system_status
 from utils.knowledge import KnowledgeBase
+from workflows.analyze import run_analyze
+from workflows.check import run_check
 from workflows.codify import run_codify
+from workflows.garden import run_garden
 from workflows.generate_command import run_generate_command
 from workflows.plan import run_plan
 from workflows.review import run_review
@@ -37,6 +40,21 @@ def main(
 ):
     """
     Compounding Engineering (DSPy Edition)
+
+    Available Commands:
+    - triage          - Categorize findings for todo system
+    - plan            - Generate project plans from descriptions
+    - work            - Execute todos and plans with ReAct agents
+    - review          - Multi-agent exhaustive code review
+    - analyze         - GraphRAG code analysis (NEW)
+    - garden          - Knowledge base maintenance (NEW)
+    - check           - Policy enforcement checks (NEW)
+    - migrate         - Migrate to .compounding/ structure (NEW)
+    - generate-command - Meta-command generator
+    - codify          - Codify feedback into knowledge base
+    - compress-kb     - Compress AI.md knowledge base
+    - index           - Index codebase for semantic search
+    - status          - System diagnostics
     """
     configure_dspy(env_file=str(env_file) if env_file else None)
 
@@ -47,6 +65,35 @@ def triage():
     Triage and categorize findings for the CLI todo system.
     """
     run_triage()
+
+
+@app.command()
+def analyze(
+    entity: str = typer.Argument(..., help="Entity to analyze (function, class, or module name)"),
+    analysis_type: str = typer.Option(
+        "navigate", "--type", "-t", help="Analysis type: navigate|impact|deps|arch|search"
+    ),
+    max_depth: int = typer.Option(2, "--depth", "-d", help="Max relationship depth (1-3)"),
+    change_type: str = typer.Option("Modify", "--change", help="Change type for impact analysis"),
+    no_save: bool = typer.Option(False, "--no-save", help="Don't save results to file"),
+):
+    """
+    Analyze code using GraphRAG agents.
+
+    Examples:
+        compounding analyze CodeNavigatorModule --type navigate
+        compounding analyze process_request --type impact --change Delete
+        compounding analyze src.utils:target.function --type deps
+        compounding analyze . --type arch
+        compounding analyze start_query:end_query --type search
+    """
+    run_analyze(
+        entity=entity,
+        analysis_type=analysis_type,
+        max_depth=max_depth,
+        change_type=change_type,
+        save=not no_save,
+    )
 
 
 @app.command()
@@ -177,6 +224,51 @@ def codify(
 
 
 @app.command()
+def check(
+    paths: Annotated[list[str], typer.Argument(help="Files or directories to check")] = None,
+    auto_fix: Annotated[
+        bool, typer.Option("--fix", help="Auto-fix violations (runs ruff --fix)")
+    ] = False,
+    staged_only: Annotated[bool, typer.Option("--staged", help="Check only staged files")] = False,
+):
+    """
+    Run policy enforcement checks on codebase.
+
+    Validates:
+    - Import rules (no relative imports)
+    - File size limits (100 lines max)
+    - Ruff linting and formatting
+
+    Examples:
+        compounding check                    # Check all Python files
+        compounding check --staged           # Check staged files only
+        compounding check src/ --fix         # Check and auto-fix src/
+        compounding check utils/policy/      # Check specific directory
+    """
+    exit_code = run_check(paths=paths, auto_fix=auto_fix, staged_only=staged_only)
+    raise typer.Exit(code=exit_code)
+
+
+@app.command()
+def garden(
+    action: str = typer.Argument(
+        "consolidate", help="Action: consolidate|compress-memory|index-commits|all"
+    ),
+    limit: int = typer.Option(100, "--limit", "-l", help="Max commits to index"),
+):
+    """
+    Maintain and optimize the knowledge base.
+
+    Examples:
+        compounding garden consolidate       # Clean up KB duplicates
+        compounding garden index-commits     # Index recent git commits
+        compounding garden compress-memory   # Compress agent memories
+        compounding garden all               # Run full maintenance
+    """
+    run_garden(action=action, limit=limit)
+
+
+@app.command()
 def compress_kb(
     ratio: float = typer.Option(0.5, "--ratio", "-r", help="Target compression ratio (0.0 to 1.0)"),
     dry_run: bool = typer.Option(
@@ -215,6 +307,42 @@ def index(
     """
     kb = KnowledgeBase()
     kb.index_codebase(root_dir=root_dir, force_recreate=recreate)
+
+
+@app.command()
+def migrate():
+    """
+    Migrate from old directory structure to new .compounding/ structure.
+
+    Moves:
+    - .knowledge/ → .compounding/knowledge/
+    - plans/ → .compounding/plans/
+    - todos/ → .compounding/todos/
+    - analysis/ → .compounding/analysis/
+    """
+    from rich.panel import Panel
+
+    from utils.paths import get_paths
+
+    console.print(
+        Panel.fit(
+            "[bold]Migrating to .compounding/ Directory Structure[/bold]",
+            border_style="blue",
+        )
+    )
+
+    paths = get_paths()
+    migrated = paths.migrate_legacy_structure()
+
+    if migrated:
+        console.print("\n[green]✓ Migration complete![/green]\n")
+        console.print("[bold]Migrated directories:[/bold]")
+        for item in migrated:
+            console.print(f"  {item}")
+        console.print("\n[dim]Old directories have been moved to .compounding/[/dim]")
+        console.print("[dim]The system is now portable to any repository![/dim]")
+    else:
+        console.print("\n[yellow]No migration needed - already using .compounding/[/yellow]")
 
 
 @app.command()

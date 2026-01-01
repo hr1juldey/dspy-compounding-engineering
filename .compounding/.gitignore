@@ -1,0 +1,25 @@
+# Compounding Engineering System - Auto-generated directories
+# This directory contains project-specific compounding engineering data
+
+# Knowledge base (often contains large embeddings)
+knowledge/
+*.json
+*.lock
+
+# Todos (work in progress)
+todos/
+
+# Plans (generated plans)
+plans/
+
+# Cache (temporary data)
+cache/
+
+# Analysis results
+analysis/
+
+# Memory (agent memories)
+memory/
+
+# Keep directory structure
+!.gitignore

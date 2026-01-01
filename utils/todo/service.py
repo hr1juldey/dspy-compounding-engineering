@@ -2,7 +2,7 @@
 Todo file service for managing the file-based todo tracking system.
 
 This module provides functions for creating, updating, and managing todo files
-in the todos/ directory following the compounding engineering workflow.
+in the .compounding/todos/ directory following the compounding engineering workflow.
 """
 
 import glob
@@ -15,8 +15,20 @@ import frontmatter
 from filelock import FileLock
 
 
-def get_next_issue_id(todos_dir: str = "todos") -> int:
+def _get_todos_dir(todos_dir: Optional[str] = None) -> str:
+    """Get the todos directory path, using centralized path management if not provided."""
+    if todos_dir is not None:
+        return todos_dir
+
+    from utils.paths import get_paths
+
+    return str(get_paths().todos_dir)
+
+
+def get_next_issue_id(todos_dir: Optional[str] = None) -> int:
     """Get the next available issue ID by scanning existing todos."""
+    todos_dir = _get_todos_dir(todos_dir)
+
     if not os.path.exists(todos_dir):
         os.makedirs(todos_dir, exist_ok=True)
         return 1
@@ -47,7 +59,7 @@ def sanitize_description(description: str) -> str:
 
 def create_finding_todo(
     finding: dict,
-    todos_dir: str = "todos",
+    todos_dir: Optional[str] = None,
     issue_id: Optional[int] = None,
 ) -> str:
     """
@@ -56,12 +68,13 @@ def create_finding_todo(
     Args:
         finding: Dict with keys: agent, review, severity (p1/p2/p3),
                  category, location, description, solution, effort
-        todos_dir: Directory to store todos
+        todos_dir: Directory to store todos (defaults to .compounding/todos/)
         issue_id: Optional specific issue ID, otherwise auto-generated
 
     Returns:
         Path to the created todo file
     """
+    todos_dir = _get_todos_dir(todos_dir)
     os.makedirs(todos_dir, exist_ok=True)
 
     if issue_id is None:
@@ -267,17 +280,19 @@ def add_work_log_entry(content: str, action: str) -> str:
         return f"{content}\n\n## Work Log\n{log_entry}"
 
 
-def get_ready_todos(todos_dir: str = "todos", pattern: Optional[str] = None) -> List[str]:
+def get_ready_todos(todos_dir: Optional[str] = None, pattern: Optional[str] = None) -> List[str]:
     """
     Find all ready todos in the todos directory, optionally filtered by pattern.
 
     Args:
-        todos_dir: Directory containing todos
+        todos_dir: Directory containing todos (defaults to .compounding/todos/)
         pattern: Optional regex pattern to filter filenames
 
     Returns:
         List of absolute file paths
     """
+    todos_dir = _get_todos_dir(todos_dir)
+
     if not os.path.exists(todos_dir):
         return []
 

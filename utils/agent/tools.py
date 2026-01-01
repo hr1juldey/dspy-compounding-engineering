@@ -210,9 +210,13 @@ def get_todo_resolver_tools(base_dir: str = ".") -> list[dspy.Tool]:
     """
     Get the full set of tools for todo resolution agents.
     Includes: directory listing, codebase search, semantic search, file reader,
-    file editor, file creator, gather context, system status, and audit logs.
+    file editor, file creator, gather context, system status, audit logs,
+    and GraphRAG tools (entity search, impact analysis, architecture mapping,
+    dependency tracing).
     """
-    return [
+    from utils.agent.graphrag_tools import get_graphrag_tools
+
+    base_tools = [
         get_directory_tool(base_dir),
         get_codebase_search_tool(base_dir),
         get_semantic_search_tool(),
@@ -223,6 +227,11 @@ def get_todo_resolver_tools(base_dir: str = ".") -> list[dspy.Tool]:
         get_system_status_tool(),
         get_audit_logs_tool(),
     ]
+
+    # Add GraphRAG tools for deep code analysis
+    graphrag_tools = get_graphrag_tools()
+
+    return base_tools + graphrag_tools
 
 
 def get_graphrag_research_tools(base_dir: str = ".") -> list[dspy.Tool]:
