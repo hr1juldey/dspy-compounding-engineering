@@ -1,82 +1,89 @@
 """
-FastMCP + FastAPI Server for Compounding Engineering
+FastAPI + FastMCP Server for Compounding Engineering.
 """
 
-import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from loguru import logger
 
-from server.adapters.dspy.bootstrap import configure_dspy
-from server.api import api_router
-from server.config.logging import setup_logging
+from config import configure_dspy
+from server.api.api_router import api_router
+from server.config.logging import configure_logging
+from server.config.settings import get_settings
+from server.infrastructure.celery.app import check_celery_workers
 
-# Import from the project's modules using absolute imports
-from server.config.settings import settings
-from server.mcp.server import get_mcp_server
-
-# Set up logging
-setup_logging()
-logger = logging.getLogger(__name__)
+settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan event handler for startup and shutdown"""
+    """Lifespan event handler for startup and shutdown."""
     # Startup
-    logger.info("Starting up Compounding Engineering Server")
+    logger.info("Starting Compounding Engineering Server")
 
-    # Initialize services (will be used later)
-    # policy_service = PolicyService()
-    # usage_service = UsageService()
-    # history_service = HistoryService()
+    # Configure logging
+    configure_logging(level="INFO")
 
     # Configure DSPy
     configure_dspy()
 
-    logger.info("Services initialized and DSPy configured")
+    # Check Celery workers (warning only)
+    if not check_celery_workers():
+        logger.warning("No Celery workers detected - async tasks will not execute")
 
-    yield  # This is where the application runs
+    logger.info("Server initialized successfully")
+
+    yield
 
     # Shutdown
     logger.info("Shutting down Compounding Engineering Server")
 
 
-# Create FastAPI application with lifespan
+# Create FastAPI application
 app = FastAPI(
     title="Compounding Engineering API",
-    description="API for DSPy-based compounding engineering system",
+    description="Multi-repo MCP+API server for DSPy-based compounding engineering",
     version="1.0.0",
     lifespan=lifespan,
 )
 
-# Create FastMCP server instance
-mcp = get_mcp_server().get_server()
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Localhost-only deployment
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Include API routes via the main API router
+# Include API routes
 app.include_router(api_router, prefix="/api")
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="server/ui/static"), name="static")
 
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
-    return {"message": "Compounding Engineering Server", "version": "1.0.0"}
+    """Root endpoint."""
+    return {
+        "message": "Compounding Engineering Server",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "mcp": "Run via: python -m server.mcp.server",
+    }
 
 
-def run_server(host: str = "0.0.0.0", port: int = 8000, reload: bool = False):
-    """
-    Run the combined FastAPI + FastMCP server
-    This serves as the uvicorn entrypoint
-    """
-    uvicorn.run(
-        "server.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        reload_dirs=["server/"] if reload else None,
-    )
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    workers_active = check_celery_workers()
+    return {"status": "healthy", "celery_workers": workers_active}
 
 
 if __name__ == "__main__":
-    run_server(settings.host, settings.port, reload=True)
+    uvicorn.run("server.main:app", host=settings.host, port=settings.port, reload=True)

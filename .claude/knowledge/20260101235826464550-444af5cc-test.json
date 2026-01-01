@@ -1,0 +1,11 @@
+{
+  "category": "test",
+  "summary": "Test learning summary",
+  "content": "Detailed test learning content",
+  "tags": [
+    "test-tag"
+  ],
+  "source": "test_source",
+  "created_at": "2026-01-01T23:58:26.464572",
+  "id": "20260101235826464550-444af5cc"
+}

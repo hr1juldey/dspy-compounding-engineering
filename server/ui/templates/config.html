@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compounding Engineering - Configuration</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ Compounding Engineering Configuration</h1>
+        <p class="subtitle">Edit your .env configuration below</p>
+
+        <form id="configForm">
+            <!-- LLM Settings -->
+            <section>
+                <h2>LLM Provider</h2>
+                <label>
+                    Provider:
+                    <input type="text" name="DSPY_LM_PROVIDER" value="{{ config.DSPY_LM_PROVIDER }}" placeholder="ollama">
+                </label>
+                <label>
+                    Model:
+                    <input type="text" name="DSPY_LM_MODEL" value="{{ config.DSPY_LM_MODEL }}" placeholder="qwen2.5vl:7b">
+                </label>
+                <label>
+                    Base URL:
+                    <input type="url" name="OLLAMA_BASE_URL" value="{{ config.OLLAMA_BASE_URL }}" placeholder="http://localhost:11434/v1">
+                </label>
+            </section>
+
+            <!-- Embeddings -->
+            <section>
+                <h2>Embeddings</h2>
+                <label>
+                    Provider:
+                    <input type="text" name="EMBEDDING_PROVIDER" value="{{ config.EMBEDDING_PROVIDER }}" placeholder="ollama">
+                </label>
+                <label>
+                    Model:
+                    <input type="text" name="EMBEDDING_MODEL" value="{{ config.EMBEDDING_MODEL }}" placeholder="mxbai-embed-large:latest">
+                </label>
+            </section>
+
+            <!-- Infrastructure -->
+            <section>
+                <h2>Infrastructure</h2>
+                <label>
+                    Qdrant URL:
+                    <input type="url" name="QDRANT_URL" value="{{ config.QDRANT_URL }}" placeholder="http://localhost:6333">
+                </label>
+                <label>
+                    Redis URL:
+                    <input type="url" name="REDIS_URL" value="{{ config.REDIS_URL }}" placeholder="redis://localhost:6350">
+                </label>
+            </section>
+
+            <!-- Server Ports -->
+            <section>
+                <h2>Server Ports</h2>
+                <label>
+                    API Host:
+                    <input type="text" name="HOST" value="{{ config.HOST }}" placeholder="127.0.0.1">
+                </label>
+                <label>
+                    API Port:
+                    <input type="number" name="PORT" value="{{ config.PORT }}" placeholder="12000">
+                </label>
+            </section>
+
+            <button type="submit">Save Configuration</button>
+        </form>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('configForm');
+        const message = document.getElementById('message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const config = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/api/v1/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                if (response.ok) {
+                    message.textContent = '✓ Configuration saved successfully';
+                    message.className = 'message success';
+                } else {
+                    throw new Error('Failed to save');
+                }
+            } catch (error) {
+                message.textContent = '✗ Failed to save configuration';
+                message.className = 'message error';
+            }
+
+            setTimeout(() => { message.textContent = ''; }, 3000);
+        });
+    </script>
+</body>
+</html>

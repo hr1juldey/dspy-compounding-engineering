@@ -1,4 +1,39 @@
 services:
+  # FastAPI + MCP Server
+  server:
+    build: .
+    image: dspy-ce:latest
+    entrypoint: ["/venv/bin/python", "-m"]
+    command: uvicorn server.main:app --host 0.0.0.0 --port 12000
+    volumes:
+      - ./:/app
+      - ./.compounding:/app/.compounding
+    env_file:
+      - .env
+    network_mode: "host"
+    depends_on:
+      - redis
+      - qdrant
+    restart: unless-stopped
+
+  # Celery Worker
+  celery-worker:
+    build: .
+    image: dspy-ce:latest
+    entrypoint: ["/venv/bin/python", "-m"]
+    command: celery -A server.infrastructure.celery.app worker --loglevel=info
+    volumes:
+      - ./:/app
+      - ./.compounding:/app/.compounding
+    env_file:
+      - .env
+    network_mode: "host"
+    depends_on:
+      - redis
+      - qdrant
+    restart: unless-stopped
+
+  # CLI Container (legacy)
   app:
     build: .
     image: dspy-ce:latest
@@ -16,8 +51,7 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
-    profiles:
-      - qdrant
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
