@@ -185,7 +185,15 @@ class CodebaseIndexer(CollectionManagerMixin):
         }
 
         # directories to ignore
-        ignore_dirs = {"plans/", "todos/", "docs/", ".knowledge/", ".venv/", "site/", "qdrant_storage/"}
+        ignore_dirs = {
+            "plans/",
+            "todos/",
+            "docs/",
+            ".knowledge/",
+            ".venv/",
+            "site/",
+            "qdrant_storage/",
+        }
 
         with console.status(f"Indexing {len(files)} files...") as status:
             for filepath in files:

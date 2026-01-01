@@ -121,7 +121,7 @@ class ServiceRegistry:
 
             qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
             try:
-                client = QdrantClient(url=qdrant_url, timeout=1.0)
+                client = QdrantClient(url=qdrant_url, timeout=90.0)
                 client.get_collections()
                 self._status["qdrant_available"] = True
             except Exception:
@@ -141,7 +141,7 @@ class ServiceRegistry:
             from qdrant_client import QdrantClient
 
             qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-            return QdrantClient(url=qdrant_url, timeout=2.0)
+            return QdrantClient(url=qdrant_url, timeout=90.0)
 
     def check_api_keys(self, force: bool = False) -> bool:
         """Check if required API keys are available. Cached by default."""
@@ -285,8 +285,8 @@ def _get_openrouter_max_tokens(model_name: str) -> int | None:
                 ctx = m.get("context_length", 128000)
                 max_out = min(ctx // 4, 32768)  # 1/4 of context, cap 32k
                 console.print(
-                    f"[dim]Model {model_name} OpenRouter context={ctx}, "
-                    f"using max_tokens={max_out}[/dim]"
+                    f"""[dim]Model {model_name} OpenRouter context={ctx},
+                    using max_tokens={max_out}[/dim]"""
                 )
                 return max_out
         return None
@@ -350,14 +350,14 @@ def configure_dspy(env_file: str | None = None):
             os.environ["LANGFUSE_BASE_URL"] = os.environ["LANGFUSE_HOST"]
 
         try:
-            from langfuse import get_client
-            from openinference.instrumentation.dspy import DSPyInstrumentor
+            # from langfuse import get_client
+            # from openinference.instrumentation.dspy import DSPyInstrumentor
 
-            # Initialize Langfuse client which registers the global OTEL TracerProvider
-            langfuse_client = get_client()
+            # # Initialize Langfuse client which registers the global OTEL TracerProvider
+            # langfuse_client = get_client()
 
-            # This automatically handles tracing via OpenTelemetry to Langfuse
-            DSPyInstrumentor().instrument()
+            # # This automatically handles tracing via OpenTelemetry to Langfuse
+            # DSPyInstrumentor().instrument()
 
             if not os.getenv("COMPOUNDING_QUIET"):
                 console.print("[dim]Langfuse observability (OpenInference) enabled.[/dim]")

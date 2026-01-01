@@ -139,10 +139,37 @@ class EmbeddingProvider:
             f"sparse_{SPARSE_MODEL_NAME}", SparseTextEmbedding, SPARSE_MODEL_NAME
         )
 
+    def _warmup_ollama_model(self, model_name: str) -> None:
+        """Warmup Ollama model by making a test embedding call."""
+        try:
+            import requests
+
+            # Smart URL construction
+            if "/api/embed" in self.embedding_base_url:
+                url = self.embedding_base_url.rstrip("/")
+            else:
+                url = self.embedding_base_url.rstrip("/") + "/api/embed"
+
+            payload = {
+                "model": model_name,
+                "input": ["warmup"],  # Test embedding to load model
+            }
+
+            logger.info(f"Warming up Ollama model: {model_name}...", to_cli=True)
+            resp = requests.post(url, json=payload, timeout=60)
+            resp.raise_for_status()
+            logger.success(f"Ollama model {model_name} ready")
+
+        except Exception as e:
+            logger.warning(f"Ollama warmup failed: {e}. Model will load on first use.")
+
     def _init_clients(self) -> None:
         """Initialize remote API or local model clients."""
         if self.embedding_provider == "fastembed":
             self.fast_model = self._get_fastembed_model(self.embedding_model_name)
+            self.client = None
+        elif self.embedding_provider == "ollama":
+            self._warmup_ollama_model(self.embedding_model_name)
             self.client = None
         else:
             self.client = OpenAI(api_key=self.embedding_api_key, base_url=self.embedding_base_url)
@@ -150,17 +177,47 @@ class EmbeddingProvider:
     def get_embedding(self, text: str) -> list[float]:
         """Generate embedding for text using configured provider."""
         try:
+            text = text.replace("\n", " ")
+
+            # FastEmbed (local)
             if self.embedding_provider == "fastembed":
                 return list(self.fast_model.embed(text))[0].tolist()
-            else:
-                text = text.replace("\n", " ")
-                response = self.client.embeddings.create(
-                    input=[text], model=self.embedding_model_name
-                )
-                return response.data[0].embedding
+
+            # Ollama (native /api/embed – NOT OpenAI-compatible)
+            if self.embedding_provider == "ollama":
+                import requests
+
+                # Smart URL construction that handles both config formats
+                if "/api/embed" in self.embedding_base_url:
+                    url = self.embedding_base_url.rstrip("/")
+                else:
+                    url = self.embedding_base_url.rstrip("/") + "/api/embed"
+
+                payload = {
+                    "model": self.embedding_model_name,
+                    "input": [text],  # Wrap in array for Ollama API compliance
+                }
+
+                resp = requests.post(url, json=payload, timeout=60)
+                resp.raise_for_status()
+                data = resp.json()
+
+                # Ollama native response: {"embeddings": [[...]]}
+                if isinstance(data, dict) and "embeddings" in data:
+                    return data["embeddings"][0]
+
+                raise RuntimeError(f"Unexpected Ollama embedding response: {data}")
+
+            # OpenAI / OpenRouter compatible
+            response = self.client.embeddings.create(
+                input=[text],
+                model=self.embedding_model_name,
+            )
+            return response.data[0].embedding
+
         except Exception as e:
             logger.error("Failed to generate embedding", detail=str(e))
-            raise e
+            raise
 
     def get_sparse_embedding(self, text: str):
         """Generate sparse embedding for text using fastembed."""
