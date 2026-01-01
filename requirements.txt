@@ -1,5 +1,6 @@
 ruff>=0.14.10
 fastmcp>=2.14.2
+fastapi[standard]>=0.128.0
 dspy>=3.0.4
 pydantic>=2.12.5
 redis>=7.1.0

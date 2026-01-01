@@ -51,6 +51,7 @@ dependencies = [
     "sqlmodel>=0.0.31",
     "networkx[default]>=3.6.1",
     "mem0ai>=1.0.1",
+    "fastapi[standard]>=0.128.0",
 ]
 
 
