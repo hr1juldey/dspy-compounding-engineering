@@ -22,6 +22,8 @@ class CollectionMetadata:
 
     METADATA_KEY = "embedding_dimension"
     MODEL_KEY = "embedding_model"
+    # Use fixed UUID for metadata point (deterministic)
+    METADATA_ID = "00000000-0000-0000-0000-000000000000"
 
     def __init__(self, client: QdrantClient):
         """
@@ -54,12 +56,12 @@ class CollectionMetadata:
             if model_name:
                 metadata_payload[self.MODEL_KEY] = model_name
 
-            # Upsert metadata point with special ID
+            # Upsert metadata point with special UUID
             self.client.upsert(
                 collection_name=collection_name,
                 points=[
                     {
-                        "id": "__metadata__",
+                        "id": self.METADATA_ID,
                         "vector": [0.0] * dimension,
                         "payload": metadata_payload,
                     }
@@ -86,7 +88,7 @@ class CollectionMetadata:
         """
         try:
             # Retrieve metadata point
-            points = self.client.retrieve(collection_name=collection_name, ids=["__metadata__"])
+            points = self.client.retrieve(collection_name=collection_name, ids=[self.METADATA_ID])
 
             if not points:
                 logger.debug(f"No metadata found for {collection_name}")

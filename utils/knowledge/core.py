@@ -24,8 +24,11 @@ from qdrant_client.models import (
 )
 
 from utils.io.logger import console, logger
+from utils.knowledge.collection_initializer import CollectionInitializer
 from utils.knowledge.docs import KnowledgeDocumentation
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.embeddings_dspy import (
+    DSPyEmbeddingProvider as EmbeddingProvider,
+)
 from utils.knowledge.indexer import CodebaseIndexer
 from utils.knowledge.utils import CollectionManagerMixin
 from utils.security.scrubber import scrubber
@@ -80,10 +83,14 @@ class KnowledgeBase(CollectionManagerMixin):
         self._graphrag_indexer = None
         self._entities_collection_name = f"entities_{project_hash}"
 
-        # Ensure 'learnings' collection exists (if DB available)
-        self._ensure_collection()
+        # CRITICAL: Ensure ALL collections exist BEFORE any LLM operations
+        # This prevents wasteful LLM calls when infrastructure isn't ready
+        initializer = CollectionInitializer(
+            self.client, self.embedding_provider, self._safe_ensure_collection
+        )
+        initializer.ensure_all_collections(project_hash, self.collection_name)
 
-        # Sync if empty
+        # Sync learnings if empty
         try:
             if self.vector_db_available and self.client.count(self.collection_name).count == 0:
                 console.print("[yellow]Vector store empty. Syncing from disk...[/yellow]")
