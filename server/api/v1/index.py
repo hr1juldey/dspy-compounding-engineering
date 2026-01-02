@@ -46,3 +46,11 @@ async def submit_index(request: IndexRequest) -> IndexSubmitResponse:
         with_graphrag=request.with_graphrag,
     )
     return IndexSubmitResponse(task_id=task_id)
+
+
+@router.get("/{task_id}", response_model=IndexStatusResponse)
+async def get_index_status(task_id: str) -> IndexStatusResponse:
+    """Get indexing task status and result."""
+    service = IndexCodebaseService()
+    status = service.get_status(task_id)
+    return IndexStatusResponse(**status)

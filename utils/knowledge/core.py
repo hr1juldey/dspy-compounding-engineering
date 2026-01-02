@@ -500,7 +500,11 @@ class KnowledgeBase(CollectionManagerMixin):
         return self._graphrag_indexer
 
     def index_codebase(
-        self, root_dir: str = ".", force_recreate: bool = False, with_graphrag: bool = False
+        self,
+        root_dir: str = ".",
+        force_recreate: bool = False,
+        with_graphrag: bool = False,
+        progress_callback=None,
     ) -> None:
         """
         Index codebase for semantic search.
@@ -509,6 +513,7 @@ class KnowledgeBase(CollectionManagerMixin):
             root_dir: Root directory to index
             force_recreate: Force recreation of collections
             with_graphrag: Enable GraphRAG entity extraction (slower but deeper)
+            progress_callback: Optional callback(current, total, message) for progress
         """
         # Standard codebase indexing
         self.codebase_indexer.index_codebase(root_dir, force_recreate=force_recreate)
@@ -517,7 +522,9 @@ class KnowledgeBase(CollectionManagerMixin):
         if with_graphrag:
             logger.info("Running GraphRAG entity extraction...")
             self.graphrag_indexer.index_codebase(
-                root_dir, force_recreate=force_recreate, progress_callback=None
+                root_dir,
+                force_recreate=force_recreate,
+                progress_callback=progress_callback,
             )
 
     def search_codebase(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:

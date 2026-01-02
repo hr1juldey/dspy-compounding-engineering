@@ -35,8 +35,27 @@ def index_codebase_task(
     try:
         # Execute codebase indexing
         kb = KnowledgeBase()
+
+        # Create progress callback for GraphRAG
+        def progress_callback(current: int, total: int, message: str):
+            """Report GraphRAG indexing progress."""
+            if total > 0:
+                percent = min(90, int((current / total) * 90))
+                publish_progress(self.request.id, percent, message)
+
+        # Run indexing with progress reporting
+        if with_graphrag:
+            publish_progress(
+                self.request.id,
+                5,
+                "Starting GraphRAG entity extraction...",
+            )
+
         result = kb.index_codebase(
-            root_dir=repo_root, force_recreate=recreate, with_graphrag=with_graphrag
+            root_dir=repo_root,
+            force_recreate=recreate,
+            with_graphrag=with_graphrag,
+            progress_callback=progress_callback if with_graphrag else None,
         )
 
         publish_progress(self.request.id, 100, "Codebase indexing complete")
