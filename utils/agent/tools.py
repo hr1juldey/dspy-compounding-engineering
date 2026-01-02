@@ -7,7 +7,7 @@ ensuring consistent codebase exploration capabilities across the system.
 
 import dspy
 
-from config import registry
+from server.config import registry
 from utils.io import list_directory, read_file_range, search_files
 from utils.web.documentation import DocumentationFetcher
 

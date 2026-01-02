@@ -21,7 +21,7 @@ def mock_qdrant():
 
 
 def test_project_hash_length():
-    from config import get_project_hash
+    from server.config import get_project_hash
 
     h = get_project_hash()
     assert len(h) == 16

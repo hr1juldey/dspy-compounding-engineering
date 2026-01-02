@@ -41,7 +41,7 @@ class KnowledgeBase(CollectionManagerMixin):
     def __init__(
         self, knowledge_dir: Optional[str] = None, qdrant_client: Optional[QdrantClient] = None
     ):
-        from config import get_project_hash, registry
+        from server.config import get_project_hash, registry
         from utils.paths import get_paths
 
         if knowledge_dir is None:

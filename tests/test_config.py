@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from config import load_configuration
+from server.config import load_configuration
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def test_load_configuration_priority(temp_env_files, monkeypatch):
         return original_exists(path)
 
     with patch("os.path.exists", side_effect=mock_exists):
-        with patch("config.load_dotenv") as mock_load:
+        with patch("server.config.env_loader.load_dotenv") as mock_load:
             load_configuration()
 
             # Should be called (local and global)
@@ -74,7 +74,7 @@ def test_load_configuration_explicit(tmp_path):
     explicit_env.write_text("TEST_VAR=explicit")
 
     with patch("os.path.exists", return_value=True):
-        with patch("config.load_dotenv") as mock_load:
+        with patch("server.config.env_loader.load_dotenv") as mock_load:
             load_configuration(env_file=str(explicit_env))
 
             # Find the call for the explicit file

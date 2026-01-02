@@ -11,7 +11,12 @@ from typing import List, Optional, Tuple
 
 from rich.console import Console
 
-from config import CONTEXT_OUTPUT_RESERVE, CONTEXT_WINDOW_LIMIT, TIER_1_FILES, get_project_root
+from server.config import (
+    CONTEXT_OUTPUT_RESERVE,
+    CONTEXT_WINDOW_LIMIT,
+    TIER_1_FILES,
+    get_project_root,
+)
 from utils.context.scorer import RelevanceScorer
 from utils.io.logger import logger
 from utils.io.safe import validate_path

@@ -10,8 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from config import configure_dspy
 from server.api.api_router import api_router
+from server.config import configure_dspy
 from server.config.logging import configure_logging
 from server.config.settings import get_settings
 from server.infrastructure.celery.app import check_celery_workers

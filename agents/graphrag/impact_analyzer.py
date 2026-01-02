@@ -11,7 +11,7 @@ Capabilities:
 import dspy
 
 from agents.graphrag.schema import EntityDetails, ImpactReport
-from config import get_project_hash, registry
+from server.config import get_project_hash, registry
 from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
 from utils.knowledge.graph_store import GraphStore
 from utils.memory.module import MemoryPredict

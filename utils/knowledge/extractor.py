@@ -34,7 +34,7 @@ def codify_learning(
     try:
         # Ensure dspy is configured (e.g. if called from a test or direct import)
         if not dspy.settings.lm:
-            from config import configure_dspy
+            from server.config import configure_dspy
 
             configure_dspy()
 

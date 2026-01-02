@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
-from config import configure_dspy
+from server.config import configure_dspy
 from utils.io import get_system_status
 from utils.knowledge import KnowledgeBase
 from workflows.analyze import run_analyze

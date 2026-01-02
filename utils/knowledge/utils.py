@@ -36,7 +36,7 @@ class CollectionManagerMixin:
         if self.client is None:
             return False
 
-        from config import registry
+        from server.config import registry
 
         # 1. Check status (Narrow lock scope)
         with registry.lock:

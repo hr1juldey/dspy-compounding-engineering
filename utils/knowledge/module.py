@@ -62,7 +62,7 @@ class KBPredict(dspy.Module):
 
     def _inject_kb(self, kwargs: dict[str, Any]) -> dict[str, Any]:
         # Use KnowledgeBase singleton from registry to avoid instantiation storm
-        from config import registry
+        from server.config import registry
 
         kb = registry.get_kb()
 

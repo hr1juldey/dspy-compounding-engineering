@@ -6,7 +6,7 @@ Provides mem0 config for agent-specific memory collections.
 
 import os
 
-from config import get_project_hash, registry
+from server.config import get_project_hash, registry
 
 
 def get_mem0_config(agent_name: str) -> dict:

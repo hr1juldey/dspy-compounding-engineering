@@ -1,5 +1,5 @@
 services:
-  # FastAPI + MCP Server
+  # FastAPI + MCP Server (disabled - run locally only)
   server:
     build: .
     image: dspy-ce:latest
@@ -15,6 +15,7 @@ services:
       - redis
       - qdrant
     restart: unless-stopped
+    profiles: ["disabled"]
 
   # Celery Worker
   celery-worker:
@@ -56,11 +57,11 @@ services:
   redis:
     image: redis:7-alpine
     container_name: dspy-ce-redis
-    network_mode: "host"
+    ports:
+      - "6350:6379"
     restart: unless-stopped
     command: >
       redis-server
-      --port 6350
       --appendonly yes
       --appendfsync everysec
       --dir /data
@@ -72,7 +73,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-p", "6350", "ping"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 10

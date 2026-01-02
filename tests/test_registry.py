@@ -1,7 +1,7 @@
 import os
 from unittest.mock import MagicMock, patch
 
-from config import ServiceRegistry
+from server.config import ServiceRegistry
 
 
 def test_registry_singleton():

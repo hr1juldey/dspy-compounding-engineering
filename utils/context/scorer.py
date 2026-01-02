@@ -10,7 +10,7 @@ It utilizes tiered logic:
 
 import os
 
-from config import TIER_1_FILES
+from server.config import TIER_1_FILES
 
 
 class RelevanceScorer:

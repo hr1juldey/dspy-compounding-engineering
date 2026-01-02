@@ -13,7 +13,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def reset_registry():
     """Reset the ServiceRegistry status before each test."""
-    from config import registry
+    from server.config import registry
 
     # Clear status to ensure clean state
     registry.status.clear()

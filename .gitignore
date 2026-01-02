@@ -58,8 +58,8 @@ worktrees/
 docs/site/
 site/
 
-.compounding-cache
-
+/.compounding-cache
+/.claude
 # Testing
 .pytest_cache/
 .coverage
