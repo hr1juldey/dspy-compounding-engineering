@@ -310,39 +310,151 @@ def index(
 
 
 @app.command()
+def init(
+    dir_name: Annotated[
+        str,
+        typer.Option("--dir", "-d", help="Base directory name (.claude, .ce, .qwen, .compounding)"),
+    ] = None,
+    interactive: Annotated[
+        bool, typer.Option("--interactive", "-i", help="Interactive mode")
+    ] = True,
+):
+    """
+    Initialize compounding directory structure.
+
+    Creates base directory and subdirectories for:
+    - Knowledge base
+    - Plans and todos
+    - Analysis and memory
+    - Cache
+
+    Examples:
+        ce init                    # Interactive mode (prompts for directory)
+        ce init --dir .claude      # Use .claude directory
+        ce init --dir .ce          # Use .ce directory (AI agent default)
+    """
+    import os
+    import re
+
+    from rich.panel import Panel
+    from rich.prompt import Prompt
+
+    from utils.paths import CompoundingPaths
+
+    # Determine directory name
+    if dir_name is None and interactive:
+        # Interactive prompt
+        console.print(
+            Panel(
+                "[bold]Choose base directory name[/bold]\n\n"
+                "This directory will contain all compounding engineering data:\n"
+                "• Knowledge base and learnings\n"
+                "• Plans and todos\n"
+                "• Analysis results and memory\n\n"
+                "[dim]Common choices:[/dim]\n"
+                "  .claude      - For Claude AI users\n"
+                "  .qwen        - For Qwen AI users\n"
+                "  .ce          - Generic (compounding engineering)\n"
+                "  .compounding - Full name\n",
+                border_style="cyan",
+            )
+        )
+
+        dir_name = Prompt.ask("[cyan]Directory name[/cyan]", default=".claude")
+    elif dir_name is None:
+        # Non-interactive default
+        dir_name = os.getenv("COMPOUNDING_DIR_NAME", ".ce")
+
+    # Validate directory name
+    if not dir_name.startswith("."):
+        dir_name = f".{dir_name}"
+
+    # Create paths instance with chosen directory
+    paths = CompoundingPaths(base_dir_name=dir_name)
+    paths.ensure_directories()
+
+    # Write to .env for persistence
+    env_file = Path.cwd() / ".env"
+    env_content = ""
+
+    if env_file.exists():
+        env_content = env_file.read_text()
+
+    # Update or add COMPOUNDING_DIR_NAME
+    if "COMPOUNDING_DIR_NAME=" in env_content:
+        env_content = re.sub(
+            r"COMPOUNDING_DIR_NAME=.*", f"COMPOUNDING_DIR_NAME={dir_name}", env_content
+        )
+    else:
+        env_content += f"\n# Compounding Directory\nCOMPOUNDING_DIR_NAME={dir_name}\n"
+
+    env_file.write_text(env_content)
+
+    console.print(f"\n[green]✓ Initialized {dir_name}/ structure[/green]")
+    console.print(f"[dim]Created: {paths.base_dir}[/dim]\n")
+    console.print("[bold]Subdirectories:[/bold]")
+    for subdir in [
+        paths.knowledge_dir,
+        paths.plans_dir,
+        paths.todos_dir,
+        paths.memory_dir,
+        paths.cache_dir,
+        paths.analysis_dir,
+    ]:
+        console.print(f"  {subdir.relative_to(paths.repo_root)}")
+
+
+@app.command()
 def migrate():
     """
-    Migrate from old directory structure to new .compounding/ structure.
+    Migrate from old directory structure to current structure.
 
     Moves:
-    - .knowledge/ → .compounding/knowledge/
-    - plans/ → .compounding/plans/
-    - todos/ → .compounding/todos/
-    - analysis/ → .compounding/analysis/
+    - .knowledge/ → {base_dir}/knowledge/
+    - .compounding/ → {base_dir}/ (if different)
+    - plans/ → {base_dir}/plans/
+    - todos/ → {base_dir}/todos/
+    - analysis/ → {base_dir}/analysis/
     """
+    import shutil
+
     from rich.panel import Panel
 
     from utils.paths import get_paths
 
+    paths = get_paths()
+
     console.print(
         Panel.fit(
-            "[bold]Migrating to .compounding/ Directory Structure[/bold]",
+            f"[bold]Migrating to {paths.base_dir.name}/ Structure[/bold]",
             border_style="blue",
         )
     )
 
-    paths = get_paths()
-    migrated = paths.migrate_legacy_structure()
+    # Migration logic
+    migrations = [
+        (paths.repo_root / ".knowledge", paths.knowledge_dir),
+        (paths.repo_root / ".compounding", paths.base_dir),
+        (paths.repo_root / "plans", paths.plans_dir),
+        (paths.repo_root / "todos", paths.todos_dir),
+        (paths.repo_root / "analysis", paths.analysis_dir),
+    ]
+
+    migrated = []
+    for old_path, new_path in migrations:
+        if old_path.exists() and not new_path.exists():
+            new_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(old_path), str(new_path))
+            migrated.append(f"{old_path.name} → {paths.base_dir.name}/{new_path.name}")
 
     if migrated:
         console.print("\n[green]✓ Migration complete![/green]\n")
         console.print("[bold]Migrated directories:[/bold]")
         for item in migrated:
             console.print(f"  {item}")
-        console.print("\n[dim]Old directories have been moved to .compounding/[/dim]")
-        console.print("[dim]The system is now portable to any repository![/dim]")
     else:
-        console.print("\n[yellow]No migration needed - already using .compounding/[/yellow]")
+        msg = f"No migration needed - already using {paths.base_dir.name}/"
+        console.print(f"\n[yellow]{msg}[/yellow]")
 
 
 @app.command()

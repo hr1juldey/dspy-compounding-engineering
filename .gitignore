@@ -60,6 +60,8 @@ site/
 
 /.compounding-cache
 /.claude
+/.ce
+/.qwen
 # Testing
 .pytest_cache/
 .coverage

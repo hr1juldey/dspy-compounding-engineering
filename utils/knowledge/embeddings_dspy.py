@@ -104,6 +104,18 @@ class DSPyEmbeddingProvider:
             return result.tolist()
         return result
 
+    def get_sparse_embedding(self, text: str) -> dict:
+        """Get sparse embedding for BM25 hybrid search (Qdrant format)."""
+        from collections import Counter
+
+        text_lower = text.lower()
+        # Simple tokenization: split on whitespace and punctuation
+        tokens = text_lower.replace(",", " ").replace(".", " ").split()
+        # Count token frequencies
+        counts = Counter(tokens)
+        # Create sparse vector with token index as key and frequency as value
+        return {str(i): float(freq) for i, (token, freq) in enumerate(counts.items())}
+
     def _infer_vector_size(self, model_name: str) -> int:
         """
         Infer vector size from model name using comprehensive dimension map.

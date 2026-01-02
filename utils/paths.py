@@ -4,34 +4,40 @@ This module provides a unified interface for managing all system directories
 and files, ensuring the system is portable across different repositories.
 """
 
+import os
 from pathlib import Path
 
 
 class CompoundingPaths:
     """Manages all paths for the compounding engineering system."""
 
-    def __init__(self, repo_root: Path | str | None = None):
+    def __init__(self, repo_root: Path | str | None = None, base_dir_name: str | None = None):
         """
         Initialize path manager.
 
         Args:
-            repo_root: Root of the repository. If None, auto-detect from current directory.
+            repo_root: Root of the repository. If None, auto-detect.
+            base_dir_name: Name of base directory (e.g., '.claude', '.ce').
+                          If None, reads from COMPOUNDING_DIR_NAME env var or defaults to '.claude'.
         """
         if repo_root is None:
             self.repo_root = self._find_repo_root()
         else:
             self.repo_root = Path(repo_root).resolve()
 
-        # Main .claude directory
-        self.claude_dir = self.repo_root / ".claude"
+        # Determine base directory name
+        dir_name = base_dir_name or os.getenv("COMPOUNDING_DIR_NAME", ".claude")
+        self.base_dir = self.repo_root / dir_name
+        # Keep claude_dir as alias for backward compatibility
+        self.claude_dir = self.base_dir
 
         # Subdirectories
-        self.knowledge_dir = self.claude_dir / "knowledge"
-        self.plans_dir = self.claude_dir / "plans"
-        self.todos_dir = self.claude_dir / "todos"
-        self.cache_dir = self.claude_dir / "cache"
-        self.analysis_dir = self.claude_dir / "analysis"
-        self.memory_dir = self.claude_dir / "memory"
+        self.knowledge_dir = self.base_dir / "knowledge"
+        self.plans_dir = self.base_dir / "plans"
+        self.todos_dir = self.base_dir / "todos"
+        self.cache_dir = self.base_dir / "cache"
+        self.analysis_dir = self.base_dir / "analysis"
+        self.memory_dir = self.base_dir / "memory"
 
     def _find_repo_root(self) -> Path:
         """
@@ -58,7 +64,7 @@ class CompoundingPaths:
     def ensure_directories(self):
         """Create all necessary directories if they don't exist."""
         for directory in [
-            self.claude_dir,
+            self.base_dir,
             self.knowledge_dir,
             self.plans_dir,
             self.todos_dir,
@@ -90,18 +96,19 @@ class CompoundingPaths:
 
     def migrate_legacy_structure(self):
         """
-        Migrate from old structure to new .claude/ structure.
+        Migrate from old structure to configured base directory structure.
 
         Moves:
-        - .knowledge/ → .claude/knowledge/
-        - plans/ → .claude/plans/
-        - todos/ → .claude/todos/
-        - analysis/ → .claude/analysis/
+        - .knowledge/ → {base_dir}/knowledge/
+        - plans/ → {base_dir}/plans/
+        - todos/ → {base_dir}/todos/
+        - analysis/ → {base_dir}/analysis/
         """
         import shutil
 
         migrations = [
             (self.repo_root / ".knowledge", self.knowledge_dir),
+            (self.repo_root / ".compounding", self.base_dir),
             (self.repo_root / "plans", self.plans_dir),
             (self.repo_root / "todos", self.todos_dir),
             (self.repo_root / "analysis", self.analysis_dir),
@@ -116,7 +123,7 @@ class CompoundingPaths:
 
                 # Move directory
                 shutil.move(str(old_path), str(new_path))
-                migrated.append(f"{old_path.name} → .claude/{new_path.name}")
+                migrated.append(f"{old_path.name} → {self.base_dir.name}/{new_path.name}")
 
         return migrated
 
