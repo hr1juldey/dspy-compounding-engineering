@@ -1,0 +1,233 @@
+{
+  "mcpServers": {
+    "compounding-engineering": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "server.mcp.server"],
+      "env": {
+        "PYTHONPATH": "/home/riju279/Documents/Tools/Dspylearn/dspy-compounding-engineering"
+      },
+      "metadata": {
+        "name": "Compounding Engineering",
+        "description": "Autonomous software engineering agent with GraphRAG, knowledge base, and local LLM support",
+        "version": "1.0.0",
+        "status": "✅ Production Ready - 16/16 tools verified and working",
+        "toolCount": 16,
+        "transports": {
+          "primary": "stdio (standard MCP protocol via stdin/stdout)",
+          "backup": "http on port 12001 (for fallback/alternative clients)"
+        },
+        "capabilities": [
+          "🔍 Code analysis with GraphRAG (semantic navigation, impact analysis)",
+          "⚙️ Autonomous work execution and code review",
+          "📚 Knowledge base management and semantic indexing",
+          "✅ Policy enforcement (file size, imports, code quality)",
+          "🤖 Local Ollama LLM support (configurable)"
+        ],
+        "frameworks": [
+          "FastMCP 2.14.2",
+          "FastAPI (port 12000)",
+          "FastMCP HTTP (port 12001)",
+          "Celery + Redis",
+          "Qdrant Vector DB",
+          "DSPy + GraphRAG"
+        ],
+        "tools": {
+          "analysis": {
+            "analyze_code": {
+              "description": "GraphRAG-powered code analysis",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "entity": "Function/class/module to analyze",
+                "analysis_type": "navigate|impact|deps|arch|search",
+                "max_depth": "Relationship depth (1-3)",
+                "change_type": "Modify|Add|Delete"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "generate_plan": {
+              "description": "Generate implementation plan from natural language",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "feature_description": "Natural language feature description"
+              },
+              "returns": "task_id for async tracking"
+            }
+          },
+          "execution": {
+            "execute_work": {
+              "description": "Execute work items from todos/plans",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "pattern": "Todo ID, plan file, or pattern (optional)",
+                "dry_run": "Preview mode (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "review_code": {
+              "description": "AI-powered code review",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "pr_url_or_id": "PR number/URL or 'latest' (default: latest)",
+                "project": "Review entire project (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "check_policies": {
+              "description": "Check code quality policies (file size, imports, ruff)",
+              "async": false,
+              "params": {
+                "repo_root": "Repository root path",
+                "paths": "Files/directories to check (optional)",
+                "auto_fix": "Auto-fix violations (default: false)"
+              },
+              "returns": "Check results immediately"
+            }
+          },
+          "knowledge": {
+            "garden_knowledge": {
+              "description": "Maintain knowledge base (consolidate, compress, index)",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "action": "consolidate|compress-memory|index-commits|all",
+                "limit": "Max commits to index (default: 100)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "codify_feedback": {
+              "description": "Transform feedback into structured improvements",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "feedback": "Feedback/instruction to codify",
+                "source": "Feedback source (default: manual_input)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "compress_knowledge_base": {
+              "description": "Semantic compression of AI.md knowledge base",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "ratio": "Compression ratio 0.0-1.0 (default: 0.5)",
+                "dry_run": "Preview mode (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "index_codebase": {
+              "description": "Index codebase into Qdrant vector DB for semantic search",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "recreate": "Force recreation of collection (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            }
+          },
+          "system": {
+            "triage_issues": {
+              "description": "Triage and categorize codebase issues",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "pattern": "Filter pattern (e.g., security, performance)",
+                "dry_run": "Preview mode (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "generate_command": {
+              "description": "Generate new CLI command from natural language",
+              "async": true,
+              "params": {
+                "repo_root": "Repository root path",
+                "description": "Natural language description of command",
+                "dry_run": "Preview mode (default: false)"
+              },
+              "returns": "task_id for async tracking"
+            },
+            "get_system_status": {
+              "description": "System diagnostics (Qdrant, Redis, Ollama, repo config)",
+              "async": false,
+              "params": {
+                "repo_root": "Repository root path"
+              },
+              "returns": "Status information immediately"
+            },
+            "configure_llm": {
+              "description": "Configure LLM provider and model",
+              "async": false,
+              "params": {
+                "provider": "ollama|openai|anthropic",
+                "model": "Model name (e.g., qwen2.5:7b, gpt-4, claude-3.5-sonnet)"
+              },
+              "returns": "Configuration confirmation"
+            }
+          },
+          "repository": {
+            "get_repo_status": {
+              "description": "Get repository status and metadata",
+              "async": false,
+              "params": {
+                "repo_root": "Repository root path"
+              },
+              "returns": "Repository status information"
+            },
+            "initialize_repo": {
+              "description": "Initialize .compounding directory structure",
+              "async": false,
+              "params": {
+                "repo_root": "Repository root path"
+              },
+              "returns": "Initialization status"
+            },
+            "get_task_status": {
+              "description": "Check status of async Celery task",
+              "async": false,
+              "params": {
+                "task_id": "Celery task ID from previous async call"
+              },
+              "returns": "Task status with progress and result if ready"
+            }
+          }
+        }
+      }
+    },
+    "calculator": {
+      "command": "uv",
+      "args": ["run", "python", "calculator_mcp.py"],
+      "env": {
+        "PYTHONPATH": "/home/riju279/Documents/Tools/Dspylearn/dspy-compounding-engineering"
+      },
+      "metadata": {
+        "name": "Calculator",
+        "description": "Scientific calculator with trigonometric, logarithmic, and arithmetic functions",
+        "version": "1.0.0",
+        "status": "✅ Test MCP Server",
+        "toolCount": 18,
+        "transports": {
+          "primary": "stdio (standard MCP protocol)",
+          "backup": "http on port 12003"
+        },
+        "tools": {
+          "arithmetic": {
+            "add": {"description": "Add two numbers"},
+            "subtract": {"description": "Subtract two numbers"},
+            "multiply": {"description": "Multiply two numbers"},
+            "divide": {"description": "Divide two numbers"}
+          },
+          "scientific": {
+            "sine": {"description": "Calculate sine (degrees)"},
+            "cosine": {"description": "Calculate cosine (degrees)"},
+            "natural_log": {"description": "Calculate natural logarithm"},
+            "exponential": {"description": "Calculate e^x"}
+          }
+        }
+      }
+    }
+  }
+}
+

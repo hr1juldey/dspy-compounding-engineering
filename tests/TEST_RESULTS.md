@@ -14,6 +14,7 @@
 ## Test Files
 
 ### 1. test_server_config.py (5 tests)
+
 Tests server configuration and settings loading.
 
 - ✅ test_server_settings_from_env
@@ -25,6 +26,7 @@ Tests server configuration and settings loading.
 **Coverage**: Server settings (100%), Logging configuration (83%)
 
 ### 2. test_celery_tasks.py (7 tests)
+
 Tests all Celery task definitions with mocked workflows.
 
 - ✅ test_analyze_code_task_success
@@ -38,6 +40,7 @@ Tests all Celery task definitions with mocked workflows.
 **Coverage**: All Celery tasks (85-100% per task)
 
 ### 3. test_application_services.py (11 tests)
+
 Tests Domain-Driven Design service layer with mocked Celery tasks.
 
 - ✅ test_analyze_service_submit
@@ -55,6 +58,7 @@ Tests Domain-Driven Design service layer with mocked Celery tasks.
 **Coverage**: Service layer (32-88% per service)
 
 ### 4. test_api_endpoints.py (10 tests)
+
 Tests FastAPI HTTP REST endpoints with TestClient.
 
 - ✅ test_root_endpoint
@@ -71,6 +75,7 @@ Tests FastAPI HTTP REST endpoints with TestClient.
 **Coverage**: API endpoints (70-100% per endpoint)
 
 ### 5. test_mcp_tools.py (9 tests)
+
 Tests MCP tool service calls (underlying services, not MCP decorators).
 
 - ✅ test_mcp_analyze_code_service
@@ -86,6 +91,7 @@ Tests MCP tool service calls (underlying services, not MCP decorators).
 **Note**: MCP server/tools show 0% coverage because they're only executed via stdio transport, not HTTP.
 
 ### 6. test_redis_pubsub.py (3 tests)
+
 Tests Redis pub/sub functionality for progress streaming.
 
 - ✅ test_publish_progress_success
@@ -95,6 +101,7 @@ Tests Redis pub/sub functionality for progress streaming.
 **Coverage**: Redis pub/sub (94%)
 
 ### 7. test_server_integration.py (9 tests)
+
 Integration tests with real server startup.
 
 - ✅ test_full_server_startup
@@ -114,7 +121,7 @@ Integration tests with real server startup.
 ### High Coverage Components (>80%)
 
 | Component | Coverage | Lines |
-|-----------|----------|-------|
+| ----------- | ---------- | ------- |
 | server/config/settings.py | 100% | 28/28 |
 | server/api/v1/analyze.py | 100% | 29/29 |
 | server/infrastructure/celery/tasks/analyze.py | 100% | 20/20 |
@@ -126,7 +133,7 @@ Integration tests with real server startup.
 ### Lower Coverage Components (<50%)
 
 | Component | Coverage | Reason |
-|-----------|----------|--------|
+| ----------- | ---------- | -------- |
 | server/mcp/server.py | 0% | Only executed via stdio transport |
 | server/mcp/tools.py | 0% | Only executed via stdio transport |
 | server/api/v1/websockets.py | 25% | Async WebSocket connections not tested |
@@ -140,6 +147,7 @@ Integration tests with real server startup.
 ## Test Patterns Used
 
 ### 1. Mocking with @patch Decorators
+
 ```python
 @patch("server.infrastructure.celery.tasks.analyze.run_analyze")
 @patch("server.infrastructure.celery.tasks.analyze.CompoundingPaths")
@@ -149,6 +157,7 @@ def test_analyze_code_task_success(mock_progress, mock_paths, mock_run):
 ```
 
 ### 2. Celery Task Testing with .apply()
+
 ```python
 result = analyze_code_task.apply(
     kwargs={"repo_root": "/test/repo", "entity": "TestClass"}
@@ -158,6 +167,7 @@ assert task_result["success"] is True
 ```
 
 ### 3. Async Testing with pytest-asyncio
+
 ```python
 @pytest.mark.asyncio
 async def test_subscribe_to_task():
@@ -167,6 +177,7 @@ async def test_subscribe_to_task():
 ```
 
 ### 4. FastAPI Integration Testing with TestClient
+
 ```python
 def test_submit_analyze(test_client):
     response = test_client.post("/api/v1/analyze", json={...})
@@ -176,32 +187,39 @@ def test_submit_analyze(test_client):
 ## Bugs Fixed During Testing
 
 ### 1. Settings Test Environment Pollution
+
 **Issue**: .env file values overriding test expectations
 **Fix**: Changed test to verify settings instantiation rather than default values
 
 ### 2. Celery Task Call Method
+
 **Issue**: `TypeError: task() got multiple values for argument 'repo_root'`
 **Fix**: Changed from direct call to `.apply(kwargs={...})` pattern
 
 ### 3. FastMCP Initialization
+
 **Issue**: `TypeError: FastMCP.__init__() got unexpected keyword 'dependencies'`
 **Fix**: Removed invalid parameter from server/mcp/server.py
 
 ### 4. Async Mocking in Redis Tests
+
 **Issue**: `TypeError: object AsyncMock can't be used in 'await' expression`
 **Fix**: Implemented proper async function mocking with side_effect
 
 ### 5. CheckResponse Validation Error
+
 **Issue**: `ValidationError: paths Field required, auto_fix Field required`
 **Fix**: Added missing fields to exception handler in check_policies_task
 
 ## Warnings
 
 ### 1. datetime.utcnow() Deprecation
+
 **Location**: server/infrastructure/redis/pubsub.py:35
 **Fix Needed**: Replace with `datetime.now(datetime.UTC)`
 
 ### 2. TemplateResponse Parameter Order
+
 **Location**: server/api/v1/config.py template rendering
 **Fix Needed**: Change `TemplateResponse(name, {"request": request})` to `TemplateResponse(request, name)`
 
@@ -218,27 +236,34 @@ def test_submit_analyze(test_client):
 ## Recommendations
 
 ### 1. Increase Service Layer Coverage
+
 Add tests for result retrieval methods:
+
 - AnalyzeService.get_result()
 - AnalyzeService.get_status()
 - Similar methods for other services
 
 ### 2. WebSocket Testing
+
 Add async WebSocket connection tests using pytest-asyncio and starlette.testclient.WebSocketTestSession
 
 ### 3. MCP Protocol Testing
+
 Consider adding stdio transport tests for MCP server/tools using subprocess mocking
 
 ### 4. Integration Tests with Real Redis/Celery
+
 Run test_celery_integration.py tests in CI/CD with actual Redis and Celery workers
 
 ### 5. Fix Deprecation Warnings
+
 - Update datetime.utcnow() to datetime.now(datetime.UTC)
 - Fix TemplateResponse parameter order
 
 ## Conclusion
 
 The test suite provides comprehensive coverage of the server codebase with:
+
 - 100% success rate on all executed tests
 - 72% overall code coverage
 - Proper mocking patterns for external dependencies

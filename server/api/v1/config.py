@@ -78,3 +78,63 @@ async def update_config(config: ConfigUpdate) -> dict:
     """Update .env configuration."""
     update_env_file(config.model_dump(exclude_none=True))
     return {"status": "updated", "message": "Configuration saved successfully"}
+
+
+@router.get("/llm/providers")
+async def get_llm_providers() -> dict:
+    """Get list of supported LLM providers."""
+    return {
+        "providers": [
+            {"name": "ollama", "description": "Local Ollama models"},
+            {"name": "openai", "description": "OpenAI API (GPT-4, etc.)"},
+            {"name": "anthropic", "description": "Anthropic API (Claude)"},
+        ]
+    }
+
+
+@router.get("/llm/models")
+async def get_llm_models(provider: str) -> dict:
+    """Get list of available models for a provider."""
+    models_map = {
+        "ollama": [
+            "qwen2.5:7b",
+            "qwen2.5:14b",
+            "llama3.3:70b",
+            "deepseek-r1:70b",
+            "gemma2:27b",
+        ],
+        "openai": ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"],
+        "anthropic": ["claude-3.5-sonnet", "claude-3-opus", "claude-3-haiku"],
+    }
+
+    if provider not in models_map:
+        return {"error": f"Unknown provider: {provider}", "models": []}
+
+    return {"provider": provider, "models": models_map[provider]}
+
+
+@router.get("/embeddings/providers")
+async def get_embedding_providers() -> dict:
+    """Get list of supported embedding providers."""
+    return {
+        "providers": [
+            {"name": "ollama", "description": "Local Ollama embeddings"},
+            {"name": "openai", "description": "OpenAI embeddings"},
+            {"name": "huggingface", "description": "HuggingFace transformers"},
+        ]
+    }
+
+
+@router.get("/embeddings/models")
+async def get_embedding_models(provider: str) -> dict:
+    """Get list of available embedding models for a provider."""
+    models_map = {
+        "ollama": ["nomic-embed-text", "mxbai-embed-large", "all-minilm"],
+        "openai": ["text-embedding-3-large", "text-embedding-3-small"],
+        "huggingface": ["BAAI/bge-large-en-v1.5", "sentence-transformers/all-MiniLM-L6-v2"],
+    }
+
+    if provider not in models_map:
+        return {"error": f"Unknown provider: {provider}", "models": []}
+
+    return {"provider": provider, "models": models_map[provider]}
