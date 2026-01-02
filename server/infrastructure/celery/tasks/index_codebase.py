@@ -13,6 +13,7 @@ def index_codebase_task(
     self,
     repo_root: str,
     recreate: bool = False,
+    with_graphrag: bool = False,
 ):
     """
     Index codebase for semantic search (async task).
@@ -20,6 +21,7 @@ def index_codebase_task(
     Args:
         repo_root: Root directory of target repository
         recreate: Force recreation of vector collection
+        with_graphrag: Enable GraphRAG entity extraction
 
     Returns:
         Task result dictionary
@@ -33,7 +35,9 @@ def index_codebase_task(
     try:
         # Execute codebase indexing
         kb = KnowledgeBase()
-        result = kb.index_codebase(root_dir=repo_root, force_recreate=recreate)
+        result = kb.index_codebase(
+            root_dir=repo_root, force_recreate=recreate, with_graphrag=with_graphrag
+        )
 
         publish_progress(self.request.id, 100, "Codebase indexing complete")
 
@@ -42,6 +46,7 @@ def index_codebase_task(
             "result": result,
             "repo_root": repo_root,
             "recreate": recreate,
+            "with_graphrag": with_graphrag,
         }
 
     except Exception as e:

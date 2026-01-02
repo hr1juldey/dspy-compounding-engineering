@@ -71,20 +71,29 @@ def compress_knowledge_base(repo_root: str, ratio: float = 0.5, dry_run: bool = 
 
 
 @mcp.tool()
-def index_codebase(repo_root: str, recreate: bool = False) -> dict:
+def index_codebase(repo_root: str, recreate: bool = False, with_graphrag: bool = False) -> dict:
     """
     Index codebase for semantic search (async - returns task_id).
 
     Indexes code into Qdrant vector database for GraphRAG and agents.
     Performs smart incremental indexing (skips unchanged files).
 
+    GraphRAG Mode (with_graphrag=True):
+    - Extracts code entities (functions, classes, methods)
+    - Builds knowledge graph with relationships
+    - Enables advanced code navigation and impact analysis
+    - WARNING: Significantly slower than standard indexing
+
     Args:
         repo_root: Root directory of repository
         recreate: Force recreation of vector collection
+        with_graphrag: Enable GraphRAG entity extraction
 
     Returns:
         Task submission info with task_id
     """
     service = IndexCodebaseService()
-    task_id = service.submit_indexing(repo_root=repo_root, recreate=recreate)
+    task_id = service.submit_indexing(
+        repo_root=repo_root, recreate=recreate, with_graphrag=with_graphrag
+    )
     return {"task_id": task_id, "status": "submitted"}

@@ -299,14 +299,57 @@ def index(
     recreate: Annotated[
         bool, typer.Option("--recreate", "-r", help="Force recreation of the vector collection")
     ] = False,
+    with_graphrag: Annotated[
+        bool,
+        typer.Option(
+            "--with-graphrag",
+            "-g",
+            help="Enable GraphRAG entity extraction (slower but deeper code understanding)",
+        ),
+    ] = False,
 ):
     """
     Index the codebase for semantic search using Vector Embeddings.
     Use this to enable agents to find relevant code snippets.
     Performs smart incremental indexing (skips unchanged files).
+
+    GraphRAG Mode (--with-graphrag):
+    - Extracts code entities (functions, classes, methods)
+    - Builds knowledge graph with relationships
+    - Enables advanced code navigation and impact analysis
+    - WARNING: Significantly slower than standard indexing
     """
+    from rich.console import Console
+
+    from utils.knowledge.time_estimator import GraphRAGTimeEstimator
+
+    console = Console()
+
+    # Show time estimation if GraphRAG enabled
+    if with_graphrag:
+        estimator = GraphRAGTimeEstimator()
+        estimated_sec, file_count = estimator.estimate_and_warn(
+            root_dir, console, threshold_sec=300
+        )
+
+        if estimated_sec > 60:
+            # Ask for confirmation for long-running operations
+            confirm = typer.confirm(
+                f"\nGraphRAG indexing will take ~{estimated_sec / 60:.1f} minutes. Continue?"
+            )
+            if not confirm:
+                console.print("[yellow]GraphRAG indexing cancelled[/yellow]")
+                raise typer.Exit(0)
+
+    # Perform indexing
     kb = KnowledgeBase()
-    kb.index_codebase(root_dir=root_dir, force_recreate=recreate)
+    kb.index_codebase(root_dir=root_dir, force_recreate=recreate, with_graphrag=with_graphrag)
+
+    if with_graphrag:
+        console.print("\n[green]✓ GraphRAG indexing complete![/green]")
+        console.print(
+            "[dim]Code entities and relationships are now available for advanced navigation.[/dim]"
+        )
 
 
 @app.command()

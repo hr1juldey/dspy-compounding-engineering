@@ -5,8 +5,15 @@ Shared utilities for vector database collection management.
 from typing import Optional, Tuple
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, SparseIndexParams, SparseVectorParams, VectorParams
+from qdrant_client.models import (
+    Distance,
+    SparseIndexParams,
+    SparseVectorParams,
+    VectorParams,
+)
 from rich.console import Console
+
+from utils.knowledge.collection_metadata import CollectionMetadata
 
 console = Console()
 
@@ -102,7 +109,13 @@ class CollectionManagerMixin:
 
         return False, existing_size
 
-    def _create_collection(self, collection_name: str, vector_size: int, enable_sparse: bool):
+    def _create_collection(
+        self,
+        collection_name: str,
+        vector_size: int,
+        enable_sparse: bool,
+        model_name: str = None,
+    ):
         """Create a new collection with specified config."""
         try:
             params = {
@@ -115,6 +128,11 @@ class CollectionManagerMixin:
                 }
 
             self.client.create_collection(**params)
+
+            # Store dimension metadata
+            metadata_manager = CollectionMetadata(self.client)
+            metadata_manager.set_dimension(collection_name, vector_size, model_name)
+
         except Exception as e:
             # Ignore 409 Conflict - another thread might have created it
             if "409" not in str(e) and "already exists" not in str(e).lower():

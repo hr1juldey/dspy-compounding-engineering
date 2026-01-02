@@ -2,6 +2,7 @@
 DSPy-based embedding provider (replaces custom EmbeddingProvider).
 
 Uses dspy.Embedder for unified embedding across all providers.
+Supports Matryoshka embeddings with dimension truncation.
 """
 
 import os
@@ -10,6 +11,11 @@ import dspy
 import numpy as np
 
 from utils.io.logger import logger
+from utils.knowledge.matryoshka_config import (
+    is_matryoshka_model,
+    truncate_embedding,
+    validate_dimension,
+)
 
 
 def resolve_dspy_embedder_config() -> str:
@@ -69,7 +75,7 @@ class DSPyEmbeddingProvider:
     Replaces custom EmbeddingProvider (292 lines → 95 lines).
     """
 
-    def __init__(self):
+    def __init__(self, target_dimension: int | None = None):
         embedder_model = resolve_dspy_embedder_config()
 
         # Create dspy.Embedder
@@ -81,18 +87,41 @@ class DSPyEmbeddingProvider:
             # Hosted model via litellm (openai, ollama, anthropic, etc.)
             self.embedder = dspy.Embedder(embedder_model, batch_size=200, caching=True)
 
-        # Infer vector size from model name
-        self.vector_size = self._infer_vector_size(embedder_model)
+        # Store model name for Matryoshka checks
+        self.model_name = embedder_model
 
-        logger.info(f"Initialized DSPy embedder: {embedder_model} (dim={self.vector_size})")
+        # Infer native vector size from model name
+        self.native_size = self._infer_vector_size(embedder_model)
+
+        # Determine target dimension (with Matryoshka support)
+        self.target_dimension = self._resolve_target_dimension(target_dimension)
+        self.vector_size = self.target_dimension
+
+        # Check if truncation is needed
+        self.use_truncation = (
+            is_matryoshka_model(self.model_name) and self.target_dimension < self.native_size
+        )
+
+        if self.use_truncation:
+            logger.info(
+                f"Matryoshka truncation enabled: {self.native_size} → {self.target_dimension} dims"
+            )
+        else:
+            logger.info(f"Initialized DSPy embedder: {embedder_model} (dim={self.vector_size})")
 
     def get_embedding(self, text: str) -> list[float]:
         """Get embedding for single text (backward compatible API)."""
         text_clean = text.replace("\n", " ")
         result = self.embedder(text_clean)
 
+        # Convert to list if numpy array
         if isinstance(result, np.ndarray):
-            return result.tolist()
+            result = result.tolist()
+
+        # Apply Matryoshka truncation if needed
+        if self.use_truncation:
+            result = truncate_embedding(result, self.target_dimension)
+
         return result
 
     def get_embeddings_batch(self, texts: list[str]) -> list[list[float]]:
@@ -100,8 +129,14 @@ class DSPyEmbeddingProvider:
         texts_clean = [t.replace("\n", " ") for t in texts]
         result = self.embedder(texts_clean)
 
+        # Convert to list if numpy array
         if isinstance(result, np.ndarray):
-            return result.tolist()
+            result = result.tolist()
+
+        # Apply Matryoshka truncation if needed
+        if self.use_truncation:
+            result = [truncate_embedding(emb, self.target_dimension) for emb in result]
+
         return result
 
     def get_sparse_embedding(self, text: str) -> dict:
@@ -115,6 +150,55 @@ class DSPyEmbeddingProvider:
         counts = Counter(tokens)
         # Create sparse vector with token index as key and frequency as value
         return {str(i): float(freq) for i, (token, freq) in enumerate(counts.items())}
+
+    def _resolve_target_dimension(self, target_dimension: int | None) -> int:
+        """
+        Resolve target embedding dimension.
+
+        Priority:
+        1. Explicit target_dimension parameter
+        2. Environment variable (collection-specific)
+        3. Native dimension from model
+
+        Args:
+            target_dimension: Explicit dimension override
+
+        Returns:
+            Target dimension to use
+        """
+        # 1. Explicit parameter
+        if target_dimension is not None:
+            if is_matryoshka_model(self.model_name):
+                if validate_dimension(self.model_name, target_dimension):
+                    return target_dimension
+                logger.warning(
+                    f"Invalid dimension {target_dimension}, using native {self.native_size}"
+                )
+            return target_dimension
+
+        # 2. Check environment variables (collection-specific)
+        # Format: GRAPHRAG_EMBEDDING_DIM, CODEBASE_EMBEDDING_DIM, etc.
+        env_dim = os.getenv("GRAPHRAG_EMBEDDING_DIM") or os.getenv("CODEBASE_EMBEDDING_DIM")
+
+        if env_dim:
+            try:
+                requested_dim = int(env_dim)
+                if is_matryoshka_model(self.model_name):
+                    if validate_dimension(self.model_name, requested_dim):
+                        return requested_dim
+                    logger.warning(
+                        f"Invalid env dimension {requested_dim}, using native {self.native_size}"
+                    )
+                else:
+                    logger.info(
+                        f"Model {self.model_name} doesn't support "
+                        "Matryoshka - ignoring dimension setting"
+                    )
+            except ValueError:
+                logger.warning(f"Invalid dimension in env: {env_dim}")
+
+        # 3. Use native dimension
+        return self.native_size
 
     def _infer_vector_size(self, model_name: str) -> int:
         """
@@ -140,6 +224,10 @@ class DSPyEmbeddingProvider:
             "snowflake-arctic-embed:s": 384,
             "snowflake-arctic-embed:m": 768,
             "snowflake-arctic-embed2": 1024,
+            # Matryoshka models (native dimensions)
+            "qwen3-embedding:8b": 4096,
+            "qwen3-embedding:4b": 2560,
+            "qwen3-embedding:0.6b": 1024,
         }
 
         # Extract model base name (remove provider prefix)

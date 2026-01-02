@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from server.config import get_project_hash, registry
 from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
-from utils.knowledge.graph_rag import CodeGraphRAG
+from utils.knowledge.graph import CodeGraphRAG
 from utils.knowledge.graph_store import GraphStore
 from utils.memory.module import MemoryPredict
 

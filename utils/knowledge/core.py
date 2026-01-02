@@ -76,6 +76,10 @@ class KnowledgeBase(CollectionManagerMixin):
             self.client, self.embedding_provider, collection_name=codebase_collection_name
         )
 
+        # GraphRAG indexer (lazy-loaded when needed)
+        self._graphrag_indexer = None
+        self._entities_collection_name = f"entities_{project_hash}"
+
         # Ensure 'learnings' collection exists (if DB available)
         self._ensure_collection()
 
@@ -481,9 +485,40 @@ class KnowledgeBase(CollectionManagerMixin):
 
         return results
 
-    def index_codebase(self, root_dir: str = ".", force_recreate: bool = False) -> None:
-        """Delegate to CodebaseIndexer."""
+    @property
+    def graphrag_indexer(self):
+        """Lazy-load GraphRAG indexer when needed."""
+        if self._graphrag_indexer is None:
+            from utils.knowledge.graph_store import GraphStore
+            from utils.knowledge.graphrag_indexer import GraphRAGIndexer
+
+            graph_store = GraphStore(
+                self.client, self.embedding_provider, self._entities_collection_name
+            )
+            self._graphrag_indexer = GraphRAGIndexer(graph_store)
+
+        return self._graphrag_indexer
+
+    def index_codebase(
+        self, root_dir: str = ".", force_recreate: bool = False, with_graphrag: bool = False
+    ) -> None:
+        """
+        Index codebase for semantic search.
+
+        Args:
+            root_dir: Root directory to index
+            force_recreate: Force recreation of collections
+            with_graphrag: Enable GraphRAG entity extraction (slower but deeper)
+        """
+        # Standard codebase indexing
         self.codebase_indexer.index_codebase(root_dir, force_recreate=force_recreate)
+
+        # GraphRAG entity extraction (if enabled)
+        if with_graphrag:
+            logger.info("Running GraphRAG entity extraction...")
+            self.graphrag_indexer.index_codebase(
+                root_dir, force_recreate=force_recreate, progress_callback=None
+            )
 
     def search_codebase(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         """Delegate to CodebaseIndexer."""

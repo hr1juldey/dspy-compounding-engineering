@@ -1,24 +1,28 @@
 """
-Backward compatibility layer for GraphRAG schemas.
+GraphRAG schemas package.
 
-Re-exports all schemas from the new schemas package structure.
+Exports all Pydantic models for agent inputs/outputs.
 """
 
-from agents.graphrag.schemas import (
-    ArchitectureReport,
-    ClusterInfo,
+from agents.graphrag.schemas.entity_schemas import (
     CodeChange,
-    CodeNavigationReport,
-    CycleInfo,
-    DependencyReport,
     EntityDetails,
-    EntityHub,
     FunctionIO,
     GitHistory,
-    ImpactReport,
     InteractionFlow,
     ParameterInfo,
+)
+from agents.graphrag.schemas.relationship_schemas import (
+    ClusterInfo,
+    CycleInfo,
+    EntityHub,
     RelatedEntity,
+)
+from agents.graphrag.schemas.report_schemas import (
+    ArchitectureReport,
+    CodeNavigationReport,
+    DependencyReport,
+    ImpactReport,
 )
 
 __all__ = [

@@ -13,6 +13,7 @@ import dspy
 from agents.graphrag.schema import EntityDetails, ImpactReport
 from server.config import get_project_hash, registry
 from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.graph import CodeGraphRAG
 from utils.knowledge.graph_store import GraphStore
 from utils.memory.module import MemoryPredict
 
@@ -40,10 +41,11 @@ class ImpactAnalyzerModule(dspy.Module):
     def __init__(self):
         super().__init__()
 
-        # Initialize graph store
+        # Initialize graph store and GraphRAG
         qdrant = registry.get_qdrant_client()
         project_hash = get_project_hash()
         self.graph_store = GraphStore(qdrant, EmbeddingProvider(), f"entities_{project_hash}")
+        self.graph_rag = CodeGraphRAG(self.graph_store)
 
         # Memory-augmented predictor
         self.analyzer = MemoryPredict(ImpactAnalyzerSignature, agent_name="impact_analyzer")
@@ -119,12 +121,56 @@ class ImpactAnalyzerModule(dspy.Module):
         # Risk assessment
         risk = "Low" if len(all_entities) < 10 else "High" if len(all_entities) > 50 else "Medium"
 
+        # Find critical paths (top 5 most important paths through dependencies)
+        critical_paths = self._find_critical_paths(entity, direct, indirect)
+
         return ImpactReport(
             summary=f"{len(all_entities)} entities across {len(files)} files affected",
             direct_dependents=direct_details,
             indirect_dependents=indirect_details,
-            critical_paths=[],  # TODO: Implement path finding
+            critical_paths=critical_paths,
             blast_radius=blast_radius,
             risk_assessment=risk,
             recommended_approach=f"{risk} risk - proceed with caution",
         )
+
+    def _find_critical_paths(self, source_entity, direct_deps, indirect_deps):
+        """
+        Find critical dependency paths from source to important entities.
+
+        Uses shortest path finding + PageRank to identify most important routes.
+
+        Args:
+            source_entity: Source entity
+            direct_deps: Direct dependents
+            indirect_deps: Indirect dependents
+
+        Returns:
+            List of paths (each path is a list of entity names)
+        """
+        paths = []
+
+        # Get top indirect dependents by combining them with direct
+        all_deps = direct_deps + indirect_deps
+
+        # For each dependent, find shortest path
+        for dep in all_deps[:10]:  # Limit to top 10 to avoid performance issues
+            path_entities = self.graph_rag.find_shortest_path(source_entity.id, dep.id)
+
+            if path_entities:
+                # Extract entity names for the path
+                path_names = [e["name"] for e in path_entities]
+                paths.append(path_names)
+
+        # Return top 5 unique paths, sorted by length (shorter = more critical)
+        unique_paths = []
+        seen = set()
+        for path in sorted(paths, key=len):
+            path_key = tuple(path)
+            if path_key not in seen and len(path) > 1:  # Exclude single-entity paths
+                unique_paths.append(path)
+                seen.add(path_key)
+                if len(unique_paths) >= 5:
+                    break
+
+        return unique_paths
