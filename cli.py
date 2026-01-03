@@ -71,7 +71,7 @@ def main(
     # Auto-warmup on first invocation (can be skipped with --skip-warmup)
     if not skip_warmup:
         try:
-            from utils.knowledge.warmup import WarmupTest
+            from utils.knowledge.utils.warmup import WarmupTest
 
             tester = WarmupTest()
             tester.run_all()
@@ -345,7 +345,7 @@ def index(
     """
     from rich.console import Console
 
-    from utils.knowledge.time_estimator import GraphRAGTimeEstimator
+    from utils.knowledge.utils.time_estimator import GraphRAGTimeEstimator
 
     console = Console()
 

@@ -8,12 +8,12 @@ import ast
 import os
 
 from utils.io.logger import logger
-from utils.knowledge.entities.class_extractor import ClassMethodExtractor
-from utils.knowledge.entities.entity_model import Entity
-from utils.knowledge.entities.function_extractor import FunctionExtractor
-from utils.knowledge.entities.import_extractor import ImportExtractor
-from utils.knowledge.entities.module_extractor import ModuleExtractor
-from utils.knowledge.entities.relation_builder import RelationBuilder
+from utils.knowledge.graphrag.entities.class_extractor import ClassMethodExtractor
+from utils.knowledge.graphrag.entities.entity_model import Entity
+from utils.knowledge.graphrag.entities.function_extractor import FunctionExtractor
+from utils.knowledge.graphrag.entities.import_extractor import ImportExtractor
+from utils.knowledge.graphrag.entities.module_extractor import ModuleExtractor
+from utils.knowledge.graphrag.entities.relation_builder import RelationBuilder
 
 
 class EntityExtractor:
@@ -43,7 +43,9 @@ class EntityExtractor:
         if self.use_llm_enrichment:
             logger.info("LLM entity enrichment ENABLED (will be slow)")
             try:
-                from utils.knowledge.entities.entity_enrichment import EntityEnrichmentModule
+                from utils.knowledge.graphrag.entities.entity_enrichment import (
+                    EntityEnrichmentModule,
+                )
 
                 self.enrichment_module = EntityEnrichmentModule()
                 logger.success("Entity enrichment module loaded")

@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 from rich.console import Console
 
 from utils.io.logger import logger
-from utils.knowledge.compression import LLMKBCompressor
+from utils.knowledge.learning.compression import LLMKBCompressor
 
 console = Console()
 

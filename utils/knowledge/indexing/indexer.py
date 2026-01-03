@@ -9,15 +9,15 @@ from qdrant_client import QdrantClient
 from rich.console import Console
 
 from utils.io.logger import logger
-from utils.knowledge.batch_embedder import BatchEmbedder
-from utils.knowledge.codebase_search import CodebaseSearch
-from utils.knowledge.embeddings_dspy import (
+from utils.knowledge.chunking.semantic_chunker import SemanticChunker
+from utils.knowledge.embeddings.batch_embedder import BatchEmbedder
+from utils.knowledge.embeddings.provider import (
     DSPyEmbeddingProvider as EmbeddingProvider,
 )
-from utils.knowledge.file_indexer import FileIndexer
-from utils.knowledge.indexer_metadata import IndexerMetadata
-from utils.knowledge.semantic_chunker import SemanticChunker
-from utils.knowledge.utils import CollectionManagerMixin
+from utils.knowledge.indexing.codebase_search import CodebaseSearch
+from utils.knowledge.indexing.file_indexer import FileIndexer
+from utils.knowledge.indexing.indexer_metadata import IndexerMetadata
+from utils.knowledge.utils.helpers import CollectionManagerMixin
 
 console = Console()
 
@@ -85,7 +85,7 @@ class CodebaseIndexer(CollectionManagerMixin):
             self._ensure_collection(force_recreate=True)
 
         # Filter files using .gitignore patterns
-        from utils.knowledge.gitignore_parser import GitignoreParser
+        from utils.knowledge.utils.gitignore_parser import GitignoreParser
 
         gitignore = GitignoreParser(root_dir)
         python_files = gitignore.filter_files(all_files)
@@ -102,7 +102,7 @@ class CodebaseIndexer(CollectionManagerMixin):
         use_async = os.getenv("USE_ASYNC_INDEXING", "true").lower() == "true"
 
         if use_async:
-            from utils.knowledge.async_indexer import AsyncFileIndexer
+            from utils.knowledge.indexing.async_indexer import AsyncFileIndexer
 
             async_indexer = AsyncFileIndexer(self, max_concurrency=20)
             stats = asyncio.run(

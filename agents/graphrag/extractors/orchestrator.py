@@ -10,7 +10,7 @@ from agents.graphrag.extractors.function_io_extractor import ParameterExtractor
 from agents.graphrag.extractors.interaction_tracer import DataFlowTracer
 from agents.graphrag.extractors.temporal_extractor import TemporalExtractor
 from agents.graphrag.schema import EntityDetails, FunctionIO, ParameterInfo
-from utils.knowledge.graph_store import GraphStore
+from utils.knowledge.graphrag.graph_store import GraphStore
 
 
 class FiveDimensionExtractor:

@@ -7,7 +7,7 @@ Generates semantic chunking strategies with reasoning, wrapped in BestOfN for qu
 import dspy
 from pydantic import BaseModel, Field
 
-from utils.knowledge.semantic_extractor import CodeStructure
+from utils.knowledge.chunking.semantic_extractor import CodeStructure
 
 
 class ChunkBoundary(BaseModel):

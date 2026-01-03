@@ -7,19 +7,19 @@ from filelock import FileLock
 from qdrant_client import QdrantClient
 
 from utils.io.logger import console, logger
-from utils.knowledge.collection_initializer import CollectionInitializer
-from utils.knowledge.docs import KnowledgeDocumentation
-from utils.knowledge.embeddings_dspy import (
+from utils.knowledge.embeddings.collection_initializer import CollectionInitializer
+from utils.knowledge.embeddings.provider import (
     DSPyEmbeddingProvider as EmbeddingProvider,
 )
-from utils.knowledge.graph_store import GraphStore
-from utils.knowledge.graphrag_indexer import GraphRAGIndexer
-from utils.knowledge.indexer import CodebaseIndexer
-from utils.knowledge.learning_formatter import LearningFormatter
-from utils.knowledge.learning_indexer import LearningIndexer
-from utils.knowledge.learning_persistence import LearningPersistence
-from utils.knowledge.learning_retrieval import LearningRetrieval
-from utils.knowledge.utils import CollectionManagerMixin
+from utils.knowledge.graphrag.graph_store import GraphStore
+from utils.knowledge.graphrag.indexer import GraphRAGIndexer
+from utils.knowledge.indexing.indexer import CodebaseIndexer
+from utils.knowledge.learning.docs import KnowledgeDocumentation
+from utils.knowledge.learning.learning_formatter import LearningFormatter
+from utils.knowledge.learning.learning_indexer import LearningIndexer
+from utils.knowledge.learning.learning_persistence import LearningPersistence
+from utils.knowledge.learning.learning_retrieval import LearningRetrieval
+from utils.knowledge.utils.helpers import CollectionManagerMixin
 from utils.security.scrubber import scrubber
 
 

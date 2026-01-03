@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from utils.io.logger import logger
-from utils.knowledge.entities import EntityExtractor
-from utils.knowledge.graph_store import GraphStore
-from utils.knowledge.graphrag_async import GraphRAGAsync
-from utils.knowledge.graphrag_sequential import GraphRAGSequential
-from utils.knowledge.graphrag_timing import GraphRAGTimingCache
+from utils.knowledge.graphrag.async_indexer import GraphRAGAsync
+from utils.knowledge.graphrag.entities import EntityExtractor
+from utils.knowledge.graphrag.graph_store import GraphStore
+from utils.knowledge.graphrag.sequential import GraphRAGSequential
+from utils.knowledge.graphrag.timing import GraphRAGTimingCache
 
 
 class GraphRAGIndexer:
@@ -43,7 +43,7 @@ class GraphRAGIndexer:
             self.graph_store._ensure_collection(force_recreate=True)
 
         # Filter files using .gitignore patterns
-        from utils.knowledge.gitignore_parser import GitignoreParser
+        from utils.knowledge.utils.gitignore_parser import GitignoreParser
 
         gitignore = GitignoreParser(root_dir)
         python_files = gitignore.filter_files(all_files)

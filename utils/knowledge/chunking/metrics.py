@@ -6,8 +6,8 @@ Provides quantifiable scoring for BestOfN and Refine modules.
 
 from typing import Any, Callable
 
-from utils.knowledge.chunking_strategies import ChunkBoundary
-from utils.knowledge.semantic_extractor import CodeStructure
+from utils.knowledge.chunking.semantic_extractor import CodeStructure
+from utils.knowledge.chunking.strategies import ChunkBoundary
 
 
 def ast_integrity_score(chunks: list[ChunkBoundary], structure: CodeStructure) -> float:

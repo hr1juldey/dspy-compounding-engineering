@@ -10,11 +10,11 @@ Architecture:
 import os
 
 from utils.io.logger import logger
-from utils.knowledge.chunking_metrics import create_reward_function
-from utils.knowledge.chunking_strategies import ChunkBoundary, ChunkingStrategy
-from utils.knowledge.json_extractor import JSONExtractor
-from utils.knowledge.markdown_extractor import MarkdownExtractor
-from utils.knowledge.semantic_extractor import CodeStructure, PythonASTExtractor
+from utils.knowledge.chunking.json_extractor import JSONExtractor
+from utils.knowledge.chunking.markdown_extractor import MarkdownExtractor
+from utils.knowledge.chunking.metrics import create_reward_function
+from utils.knowledge.chunking.semantic_extractor import CodeStructure, PythonASTExtractor
+from utils.knowledge.chunking.strategies import ChunkBoundary, ChunkingStrategy
 
 
 class SemanticChunker:
@@ -42,7 +42,7 @@ class SemanticChunker:
         if self.use_llm_validation:
             import dspy
 
-            from utils.knowledge.chunking_strategies import ChunkingStrategyGenerator
+            from utils.knowledge.chunking.strategies import ChunkingStrategyGenerator
 
             self.strategy_generator = ChunkingStrategyGenerator()
             self.dspy = dspy

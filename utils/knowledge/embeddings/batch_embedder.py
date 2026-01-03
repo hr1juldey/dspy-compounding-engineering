@@ -6,7 +6,7 @@ Wraps the DSPy embedding provider to provide batch processing with indexed resul
 
 from typing import List, Tuple
 
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider
+from utils.knowledge.embeddings.provider import DSPyEmbeddingProvider
 
 
 class BatchEmbedder:

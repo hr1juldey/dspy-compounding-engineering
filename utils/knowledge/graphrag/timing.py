@@ -42,7 +42,9 @@ class GraphRAGTimingCache:
     def _get_default_data(self) -> dict:
         """Get default timing data with conservative estimates."""
         return {
-            "per_file_ms": 150.0,  # Conservative default: 150ms per file
+            "per_file_ms": 1200.0,  # Realistic default for GraphRAG:
+            # 1200ms per file
+            # (AST + entities + embeddings + storage)
             "total_runs": 0,
             "total_files_indexed": 0,
             "total_time_ms": 0,

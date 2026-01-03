@@ -6,7 +6,7 @@ Builds call graphs and dependency relationships from AST.
 
 import ast
 
-from utils.knowledge.entities.entity_model import Entity
+from utils.knowledge.graphrag.entities.entity_model import Entity
 
 
 class RelationBuilder:

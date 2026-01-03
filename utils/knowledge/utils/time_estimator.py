@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from utils.knowledge.graphrag_timing import GraphRAGTimingCache
+from utils.knowledge.graphrag.timing import GraphRAGTimingCache
 
 
 class GraphRAGTimeEstimator:
@@ -43,7 +43,7 @@ class GraphRAGTimeEstimator:
         all_files = list(root_path.rglob("*.py"))
 
         # Apply .gitignore filtering
-        from utils.knowledge.gitignore_parser import GitignoreParser
+        from utils.knowledge.utils.gitignore_parser import GitignoreParser
 
         gitignore = GitignoreParser(root_dir)
         python_files = gitignore.filter_files(all_files)

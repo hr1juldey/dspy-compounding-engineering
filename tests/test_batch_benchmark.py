@@ -25,7 +25,7 @@ def test_determine_optimal_batch_size():
     Skip if embedding provider not available.
     """
     try:
-        from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+        from utils.knowledge.embeddings.provider import DSPyEmbeddingProvider as EmbeddingProvider
 
         provider = EmbeddingProvider()
     except Exception as e:
@@ -148,7 +148,7 @@ def test_measure_machine_specs():
     )
 
     try:
-        from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+        from utils.knowledge.embeddings.provider import DSPyEmbeddingProvider as EmbeddingProvider
 
         provider = EmbeddingProvider()
         print(f"\nEmbedding Provider: {provider.embedding_provider}")

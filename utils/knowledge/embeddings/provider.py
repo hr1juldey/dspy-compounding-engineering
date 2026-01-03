@@ -12,7 +12,7 @@ import numpy as np
 from qdrant_client.models import SparseVector
 
 from utils.io.logger import logger
-from utils.knowledge.matryoshka_config import (
+from utils.knowledge.embeddings.matryoshka_config import (
     is_matryoshka_model,
     truncate_embedding,
     validate_dimension,

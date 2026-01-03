@@ -9,8 +9,8 @@ Second line: Graph traversal with PageRank
 import networkx as nx
 
 from utils.io.logger import logger
-from utils.knowledge.graph.graph_builder import GraphBuilder
-from utils.knowledge.graph_store import GraphStore
+from utils.knowledge.graphrag.graph.graph_builder import GraphBuilder
+from utils.knowledge.graphrag.graph_store import GraphStore
 
 
 class CodeGraphRAG:

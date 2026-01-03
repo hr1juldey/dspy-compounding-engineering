@@ -22,9 +22,9 @@ from qdrant_client.models import (
 )
 
 from utils.io.logger import logger
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
-from utils.knowledge.entities import Entity
-from utils.knowledge.utils import CollectionManagerMixin
+from utils.knowledge.embeddings.provider import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.graphrag.entities import Entity
+from utils.knowledge.utils.helpers import CollectionManagerMixin
 
 
 class GraphStore(CollectionManagerMixin):
@@ -144,7 +144,7 @@ class GraphStore(CollectionManagerMixin):
             texts_to_embed.append(text)
 
         # Batch embed all entities
-        from utils.knowledge.batch_embedder import BatchEmbedder
+        from utils.knowledge.embeddings.batch_embedder import BatchEmbedder
 
         batch_embedder = BatchEmbedder(self.embedding_provider)
         embedding_results = batch_embedder.embed_texts_batch(texts_to_embed)

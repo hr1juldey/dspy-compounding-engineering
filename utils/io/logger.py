@@ -94,6 +94,17 @@ def configure_logging(log_path: Optional[str] = None):
 
     loguru_logger.debug("Loguru File Sink initialized (enqueue=False)")
 
+    # Add Console Sink for terminal output (INFO and above)
+    # Only show INFO, SUCCESS, WARNING, ERROR in terminal
+    console_level = os.getenv("COMPOUNDING_CONSOLE_LEVEL", "INFO").upper()
+    loguru_logger.add(
+        lambda msg: console.print(msg, end=""),
+        level=console_level,
+        format="{time:HH:mm:ss} | {level: <8} | {message}",
+        colorize=True,
+        filter=lambda record: record["level"].name in ["INFO", "SUCCESS", "WARNING", "ERROR"],
+    )
+
     # Intercept standard logging - capture INFO and above from libraries by default
     # but route EVERYTHING to Loguru for unified scrubbing
     # We clear existing handlers and force ours to be the only one

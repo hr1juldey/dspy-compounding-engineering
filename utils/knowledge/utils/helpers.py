@@ -13,7 +13,7 @@ from qdrant_client.models import (
 )
 from rich.console import Console
 
-from utils.knowledge.collection_metadata import CollectionMetadata
+from utils.knowledge.embeddings.collection_metadata import CollectionMetadata
 
 console = Console()
 

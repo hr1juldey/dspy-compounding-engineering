@@ -3,7 +3,7 @@
 import networkx as nx
 
 from utils.io.logger import logger
-from utils.knowledge.graph_store import GraphStore
+from utils.knowledge.graphrag.graph_store import GraphStore
 
 
 class GraphAnalytics:

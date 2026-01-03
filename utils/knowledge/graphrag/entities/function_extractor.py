@@ -2,7 +2,7 @@
 
 import ast
 
-from utils.knowledge.entities.entity_model import Entity, generate_entity_id
+from utils.knowledge.graphrag.entities.entity_model import Entity, generate_entity_id
 
 
 class FunctionExtractor:

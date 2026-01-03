@@ -9,9 +9,9 @@ from dspy_qdrant import QdrantRM
 from pydantic import BaseModel
 
 from server.config import get_project_hash, registry
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
-from utils.knowledge.graph import CodeGraphRAG
-from utils.knowledge.graph_store import GraphStore
+from utils.knowledge.embeddings.provider import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.graphrag.graph import CodeGraphRAG
+from utils.knowledge.graphrag.graph_store import GraphStore
 from utils.memory.module import MemoryPredict
 
 
