@@ -40,6 +40,11 @@ class ServerSettings(BaseSettings):
     semantic_chunk_overlap: int = 200
     use_llm_chunking_validation: bool = True
 
+    # Style Editing (EveryStyleEditorModule)
+    style_edit_chunk_size: int = 2000
+    style_edit_chunk_overlap: int = 300
+    style_edit_chunk_threshold: float = 0.6
+
     # Batch processing
     optimal_batch_size: int = 100
 

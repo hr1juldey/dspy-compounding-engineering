@@ -1,8 +1,10 @@
 from .command_generator import CommandGenerator
 from .every_style_editor import EveryStyleEditor
+from .every_style_editor_module import EveryStyleEditorModule
 from .feedback_codifier import FeedbackCodifier
 from .plan_generator import PlanGenerator
 from .pr_comment_resolver import PrCommentResolver
+from .signatures import ChunkStyleEditor, ContentAnalyzer, EditAggregator
 from .spec_flow_analyzer import SpecFlowAnalyzer
 from .task_executor import TaskExecutor
 from .task_validator import TaskValidator
@@ -11,8 +13,12 @@ from .work_plan_executor import ReActPlanExecutor
 from .work_todo_executor import ReActTodoResolver
 
 __all__ = [
+    "ChunkStyleEditor",
     "CommandGenerator",
+    "ContentAnalyzer",
+    "EditAggregator",
     "EveryStyleEditor",
+    "EveryStyleEditorModule",
     "FeedbackCodifier",
     "PlanGenerator",
     "PrCommentResolver",
