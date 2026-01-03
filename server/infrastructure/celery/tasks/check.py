@@ -32,7 +32,9 @@ def check_policies_task(
 
     try:
         # Execute check workflow (synchronous)
-        exit_code = run_check(paths=paths, auto_fix=auto_fix, staged_only=staged_only)
+        exit_code = run_check(
+            repo_root=repo_root, paths=paths, auto_fix=auto_fix, staged_only=staged_only
+        )
 
         return {
             "success": exit_code == 0,

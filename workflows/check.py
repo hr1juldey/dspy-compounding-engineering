@@ -1,22 +1,24 @@
 """Policy enforcement workflow."""
 
-import subprocess
 from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from server.infrastructure.execution import RepoExecutor
 from utils.policy.orchestrator import PolicyEnforcer
 
 console = Console()
 
 
-def _get_files_to_check(paths: list[str] | None, staged_only: bool) -> list[Path]:
+def _get_files_to_check(repo_root: Path, paths: list[str] | None, staged_only: bool) -> list[Path]:
     """Get list of Python files to check."""
+    executor = RepoExecutor(repo_root)
+
     if staged_only:
         # Get staged files from git
-        result = subprocess.run(
+        result = executor.run(
             ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
             capture_output=True,
             text=True,
@@ -40,7 +42,7 @@ def _get_files_to_check(paths: list[str] | None, staged_only: bool) -> list[Path
 
     # Check all Python files in repo
     try:
-        result = subprocess.run(
+        result = executor.run(
             ["git", "ls-files", "*.py"],
             capture_output=True,
             text=True,
@@ -84,12 +86,19 @@ def _display_violations_table(enforcer: PolicyEnforcer, violations_by_severity: 
 
 
 def run_check(
+    repo_root: str | Path,
     paths: list[str] | None = None,
     auto_fix: bool = False,
     staged_only: bool = False,
 ) -> int:
     """
     Run policy enforcement checks on codebase.
+
+    Args:
+        repo_root: Root directory of target repository
+        paths: Files or directories to check
+        auto_fix: Auto-fix violations using ruff
+        staged_only: Check only staged files
 
     Returns:
         Exit code (0 for success, 1 for violations found)
@@ -102,8 +111,12 @@ def run_check(
         )
     )
 
+    # Initialize RepoExecutor for target repo
+    repo_root = Path(repo_root)
+    executor = RepoExecutor(repo_root)
+
     # Get files to check
-    files = _get_files_to_check(paths, staged_only)
+    files = _get_files_to_check(repo_root, paths, staged_only)
     if not files:
         console.print("[yellow]No Python files found to check.[/yellow]")
         return 0
@@ -165,14 +178,14 @@ def run_check(
         console.print("\n[cyan]Running auto-fix with ruff...[/cyan]")
         try:
             # Run ruff check --fix
-            fix_result = subprocess.run(
+            fix_result = executor.run(
                 ["ruff", "check", "--fix"] + [str(f) for f in files],
                 capture_output=True,
                 text=True,
             )
 
             # Run ruff format
-            format_result = subprocess.run(
+            format_result = executor.run(
                 ["ruff", "format"] + [str(f) for f in files],
                 capture_output=True,
                 text=True,

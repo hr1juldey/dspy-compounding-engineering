@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import re
-import subprocess
+from pathlib import Path
 from typing import Any, Optional
 
 from pydantic import BaseModel
@@ -23,6 +23,7 @@ from agents.review import (
     PerformanceOracle,
     SecuritySentinel,
 )
+from server.infrastructure.execution import RepoExecutor
 from utils.context import ProjectContext
 from utils.git import GitService
 from utils.io.logger import console, logger
@@ -503,10 +504,19 @@ def _create_review_todos(findings: list[dict]) -> None:
     _display_todo_summary(created_todos, counts)
 
 
-def run_review(pr_url_or_id: str, project: bool = False):
+def run_review(pr_url_or_id: str, project: bool = False, repo_root: str | Path | None = None):
     """
     Perform exhaustive multi-agent code review.
+
+    Args:
+        pr_url_or_id: PR number, URL, branch name, or 'latest' for local changes
+        project: Review entire project instead of just changes
+        repo_root: Root directory of target repository (defaults to current directory)
     """
+    # Initialize RepoExecutor for target repo
+    repo_root = Path(repo_root) if repo_root else Path.cwd()
+    executor = RepoExecutor(repo_root)
+
     if project:
         logger.info("Starting Full Project Review", to_cli=True)
     else:
@@ -548,7 +558,7 @@ def run_review(pr_url_or_id: str, project: bool = False):
     if worktree_path and os.path.exists(worktree_path):
         console.print(f"\n[yellow]Cleaning up worktree {worktree_path}...[/yellow]")
         try:
-            subprocess.run(
+            executor.run(
                 ["git", "worktree", "remove", "--force", worktree_path],
                 check=True,
                 capture_output=True,

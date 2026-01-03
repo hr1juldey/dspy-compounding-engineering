@@ -3,6 +3,7 @@
 import subprocess
 from pathlib import Path
 
+from server.infrastructure.execution import RepoExecutor
 from utils.policy.protocols.base import StaticProtocol
 from utils.policy.protocols.questions import PolicyQuestion
 from utils.policy.violations import Severity, Violation
@@ -39,8 +40,12 @@ class RuffProtocol(StaticProtocol):
 
         violations = []
 
+        # Find repo root from file path (use file's parent as fallback)
+        repo_root = file_path.parent
+        executor = RepoExecutor(repo_root)
+
         try:
-            result = subprocess.run(
+            result = executor.run(
                 ["ruff", "check", str(file_path)],
                 capture_output=True,
                 text=True,

@@ -5,6 +5,7 @@ MCP tools for repository management and status.
 from celery.result import AsyncResult
 
 from server.application.services.repo_service import RepoService
+from server.infrastructure.execution import RepoExecutor
 from server.mcp.server import mcp
 
 
@@ -50,11 +51,23 @@ def initialize_repo(repo_root: str) -> dict:
     """
     Initialize .compounding directory for a repository.
 
+    Detects and reports the repository's environment (Python/Node/Rust/Go/C).
+
     Args:
         repo_root: Root directory of repository
 
     Returns:
-        Initialization status
+        Initialization status with detected environment
     """
     service = RepoService()
-    return service.initialize_repo(repo_root)
+    result = service.initialize_repo(repo_root)
+
+    # Detect environment on init
+    try:
+        executor = RepoExecutor(repo_root)
+        environment = executor.environment
+        result["environment_detected"] = environment.description
+    except Exception as e:
+        result["environment_detected"] = f"Error detecting environment: {e}"
+
+    return result
