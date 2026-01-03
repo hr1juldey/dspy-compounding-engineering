@@ -33,9 +33,13 @@ class LearningRetrieval:
         try:
             query_filter = None
             if tags:
-                conds = [FieldCondition(key="tags", match=MatchValue(v=tag)) for tag in tags] + [
-                    FieldCondition(key="category", match=MatchValue(v=tag)) for tag in tags
+                tags_conds = [
+                    FieldCondition(key="tags", match=MatchValue(value=tag)) for tag in tags
                 ]
+                cat_conds = [
+                    FieldCondition(key="category", match=MatchValue(value=tag)) for tag in tags
+                ]
+                conds = tags_conds + cat_conds
                 query_filter = Filter(should=conds)
 
             dense = self.embedding_provider.get_embedding(query)
