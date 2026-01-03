@@ -25,7 +25,10 @@ class ChunkBoundary(BaseModel):
 class ChunkingStrategy(BaseModel):
     """Complete chunking strategy with reasoning"""
 
-    reasoning: str = Field(description="Overall strategy and approach to chunking")
+    reasoning: str = Field(
+        default="Semantic chunking applied",
+        description="Overall strategy and approach to chunking",
+    )
     chunks: list[ChunkBoundary] = Field(description="List of chunk boundaries")
     confidence: float = Field(default=0.5, description="Self-assessed confidence (0.0 to 1.0)")
 

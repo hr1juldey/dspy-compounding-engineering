@@ -7,6 +7,7 @@ Stores entities as Qdrant points with:
 - Graph clustering for scalability
 """
 
+import uuid
 from typing import Any
 
 from qdrant_client import QdrantClient
@@ -153,8 +154,8 @@ class GraphStore(CollectionManagerMixin):
         for idx, vector in embedding_results:
             entity = entities[idx]
 
-            # Use entity ID directly (already deterministic hash)
-            point_id = entity.id
+            # Convert hex entity ID to full 32-char UUID (simple format)
+            point_id = uuid.UUID(int=int(entity.id, 16)).hex
 
             # Payload includes all entity data + relations
             payload = {
@@ -189,8 +190,10 @@ class GraphStore(CollectionManagerMixin):
             return None
 
         try:
+            # Convert hex entity ID to full 32-char UUID for Qdrant
+            point_id = uuid.UUID(int=int(entity_id, 16)).hex
             result = self.client.retrieve(
-                collection_name=self.collection_name, ids=[entity_id], with_vectors=False
+                collection_name=self.collection_name, ids=[point_id], with_vectors=False
             )
 
             if not result:
@@ -384,8 +387,8 @@ class GraphStore(CollectionManagerMixin):
             if not existing:
                 return 0
 
-            # Delete by IDs
-            entity_ids = [e.id for e in existing]
+            # Delete by IDs (convert hex to full 32-char UUID)
+            entity_ids = [uuid.UUID(int=int(e.id, 16)).hex for e in existing]
             self.client.delete(
                 collection_name=self.collection_name,
                 points_selector=entity_ids,

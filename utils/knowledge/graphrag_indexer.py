@@ -1,131 +1,86 @@
-"""
-GraphRAG Indexer - Entity extraction and graph construction.
+"""GraphRAG Indexer - orchestrates entity extraction via service layer."""
 
-Orchestrates entity extraction from codebase and stores in Qdrant.
-"""
-
+import asyncio
+import os
 import time
 from pathlib import Path
+from typing import Callable, Optional
 
 from utils.io.logger import logger
 from utils.knowledge.entities import EntityExtractor
 from utils.knowledge.graph_store import GraphStore
+from utils.knowledge.graphrag_async import GraphRAGAsync
+from utils.knowledge.graphrag_sequential import GraphRAGSequential
 from utils.knowledge.graphrag_timing import GraphRAGTimingCache
 
 
 class GraphRAGIndexer:
-    """
-    Indexes codebase for GraphRAG.
-
-    Extracts entities, builds graph, stores in Qdrant.
-    """
+    """Orchestrates entity extraction via async/sequential strategies."""
 
     def __init__(self, graph_store: GraphStore):
-        """
-        Initialize GraphRAG indexer.
-
-        Args:
-            graph_store: GraphStore for entity storage
-        """
+        """Initialize with graph store."""
         self.graph_store = graph_store
         self.entity_extractor = EntityExtractor()
         self.timing_cache = GraphRAGTimingCache()
 
     def index_codebase(
-        self, root_dir: str | Path, force_recreate: bool = False, progress_callback=None
+        self,
+        root_dir: str | Path,
+        force_recreate: bool = False,
+        progress_callback: Optional[Callable] = None,
     ) -> dict:
-        """
-        Index entire codebase for GraphRAG.
-
-        Args:
-            root_dir: Root directory to index
-            force_recreate: Recreate collection from scratch
-            progress_callback: Optional callback(file_path, progress, total)
-
-        Returns:
-            Dict with statistics: {files: int, entities: int, time_sec: float}
-        """
+        """Index codebase for GraphRAG (async or sequential)."""
         start_time = time.time()
         root_path = Path(root_dir)
+        all_files = list(root_path.rglob("*.py"))
 
-        # Find all Python files
-        python_files = list(root_path.rglob("*.py"))
-
-        if not python_files:
-            logger.warning(f"No Python files found in {root_dir}")
+        if not all_files:
+            logger.warning(f"No Python files in {root_dir}")
             return {"files": 0, "entities": 0, "time_sec": 0.0}
 
-        # Recreate collection if needed
         if force_recreate:
             logger.info("Force recreating GraphRAG collection")
             self.graph_store._ensure_collection(force_recreate=True)
 
+        # Filter files using .gitignore patterns
+        from utils.knowledge.gitignore_parser import GitignoreParser
+
+        gitignore = GitignoreParser(root_dir)
+        python_files = gitignore.filter_files(all_files)
+
         logger.info(f"Indexing {len(python_files)} Python files for GraphRAG")
 
-        total_entities = 0
-        indexed_files = 0
+        # Choose async or sequential mode
+        use_async = os.getenv("USE_ASYNC_GRAPHRAG", "true").lower() == "true"
 
-        for idx, file_path in enumerate(python_files):
-            file_start = time.time()
-
-            try:
-                # Read file
-                code = file_path.read_text()
-
-                # Extract entities
-                entities = self.entity_extractor.extract_from_python(code, str(file_path))
-
-                if entities:
-                    # Store entities in Qdrant
-                    stored = self.graph_store.store_entities(entities)
-                    total_entities += stored
-
-                    file_time_ms = (time.time() - file_start) * 1000
-
-                    # Record timing
-                    self.timing_cache.record_indexing(str(file_path), len(entities), file_time_ms)
-
-                    indexed_files += 1
-
-                    # Progress callback
-                    if progress_callback:
-                        progress_callback(str(file_path), idx + 1, len(python_files))
-
-                    # Log progress every 50 files
-                    if indexed_files % 50 == 0:
-                        logger.info(
-                            f"Progress: {indexed_files}/{len(python_files)} files, "
-                            f"{total_entities} entities"
-                        )
-
-            except Exception as e:
-                logger.error(f"Failed to index {file_path}: {e}")
-                continue
+        if use_async:
+            # Use async indexing for 5-20x speedup
+            async_indexer = GraphRAGAsync(
+                self.entity_extractor, self.graph_store, self.timing_cache, max_concurrent=10
+            )
+            stats = asyncio.run(async_indexer.index_files(python_files, progress_callback))
+        else:
+            # Use sequential fallback (debugging/rollback)
+            sequential_indexer = GraphRAGSequential(
+                self.entity_extractor, self.graph_store, self.timing_cache
+            )
+            stats = sequential_indexer.index_files(python_files, progress_callback)
 
         # Complete timing cache
         self.timing_cache.complete_run()
 
         elapsed_time = time.time() - start_time
-
-        stats = {"files": indexed_files, "entities": total_entities, "time_sec": elapsed_time}
+        stats["time_sec"] = elapsed_time
 
         logger.success(
-            f"GraphRAG indexing complete: {indexed_files} files, "
-            f"{total_entities} entities in {elapsed_time:.1f}s"
+            f"GraphRAG indexing complete: {stats['files']} files, "
+            f"{stats['entities']} entities in {elapsed_time:.1f}s"
         )
 
         return stats
 
     def index_file(self, file_path: str | Path) -> int:
-        """
-        Index a single file for GraphRAG.
-
-        Args:
-            file_path: Path to Python file
-
-        Returns:
-            Number of entities extracted
-        """
+        """Index single file for GraphRAG."""
         path = Path(file_path)
 
         if not path.exists():
@@ -133,14 +88,10 @@ class GraphRAGIndexer:
             return 0
 
         try:
-            # Read file
             code = path.read_text()
-
-            # Extract entities
             entities = self.entity_extractor.extract_from_python(code, str(path))
 
             if entities:
-                # Store entities
                 stored = self.graph_store.store_entities(entities)
                 logger.info(f"Indexed {path.name}: {stored} entities")
                 return stored
@@ -152,15 +103,7 @@ class GraphRAGIndexer:
             return 0
 
     def update_file(self, file_path: str | Path) -> int:
-        """
-        Update entities for a single file (incremental indexing).
-
-        Args:
-            file_path: Path to Python file
-
-        Returns:
-            Number of entities updated
-        """
+        """Update entities for single file (incremental)."""
         path = Path(file_path)
 
         # Delete old entities for this file

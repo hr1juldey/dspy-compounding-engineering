@@ -38,9 +38,15 @@ class GraphRAGTimeEstimator:
         Returns:
             Tuple of (estimated_seconds, file_count)
         """
-        # Count Python files
+        # Count Python files using .gitignore filtering
         root_path = Path(root_dir)
-        python_files = list(root_path.rglob("*.py"))
+        all_files = list(root_path.rglob("*.py"))
+
+        # Apply .gitignore filtering
+        from utils.knowledge.gitignore_parser import GitignoreParser
+
+        gitignore = GitignoreParser(root_dir)
+        python_files = gitignore.filter_files(all_files)
         file_count = len(python_files)
 
         if file_count == 0:

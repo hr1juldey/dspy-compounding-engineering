@@ -55,13 +55,25 @@ class SemanticChunker:
             List[str]: Chunked text segments
         """
         try:
-            # Precondition: Skip empty or very small files
-            if not code or len(code.strip()) < 100:
+            # Validate input
+            if not code:
+                logger.debug(f"Empty file: {filepath}")
                 return []
 
-            # Precondition: Skip very large files (> 500KB)
-            if len(code) > 500000:
-                logger.warning(f"File too large ({len(code)} chars), using fallback chunking")
+            # Configurable minimum file size (default 10 chars)
+            min_size = int(os.getenv("SEMANTIC_MIN_FILE_SIZE", "10"))
+            if len(code.strip()) < min_size:
+                logger.info(
+                    f"File too small ({len(code)} chars < {min_size}): {filepath}, using fallback"
+                )
+                return self._fallback_chunking(code)
+
+            # Configurable maximum file size (default 500KB)
+            max_size = int(os.getenv("SEMANTIC_MAX_FILE_SIZE", "500000"))
+            if len(code) > max_size:
+                logger.warning(
+                    f"File too large ({len(code)} chars > {max_size}): {filepath}, using fallback"
+                )
                 return self._fallback_chunking(code)
 
             # Determine file type (case-insensitive)
@@ -94,25 +106,41 @@ class SemanticChunker:
             )
 
             # Step 3: If AST is good, accept it. If bad, LLM redoes it.
-            ACCEPT_THRESHOLD = 0.75
+            accept_threshold = float(os.getenv("SEMANTIC_ACCEPT_THRESHOLD", "0.75"))
 
-            if ast_score >= ACCEPT_THRESHOLD:
+            if ast_score >= accept_threshold:
                 # AST is good enough, use it
-                logger.info(f"AST chunking good (score={ast_score:.2f}), accepting")
+                logger.info(
+                    f"AST accepted (score={ast_score:.2f} >= {accept_threshold}): {filepath}"
+                )
                 return self._strategy_to_chunks(ast_strategy)
 
-            # AST failed, use LLM to redo (only if enabled)
-            if self.use_llm_validation:
-                logger.info(f"AST chunking bad (score={ast_score:.2f}), LLM redoing")
-                llm_strategy = self._llm_redo_strategy(code, structure)
-                return self._strategy_to_chunks(llm_strategy)
+            # AST below threshold - try LLM if enabled
+            logger.info(
+                f"AST below threshold (score={ast_score:.2f} < {accept_threshold}): {filepath}"
+            )
 
-            # LLM disabled but AST failed - log warning and use AST anyway
-            logger.warning(f"AST chunking mediocre (score={ast_score:.2f}), but LLM disabled")
+            if self.use_llm_validation:
+                try:
+                    logger.info(f"Attempting LLM-based chunking: {filepath}")
+                    llm_strategy = self._llm_redo_strategy(code, structure)
+                    logger.success(f"LLM chunking succeeded: {filepath}")
+                    return self._strategy_to_chunks(llm_strategy)
+                except Exception as llm_error:
+                    logger.warning(
+                        f"LLM chunking failed, falling back to AST: {filepath} - {llm_error}"
+                    )
+                    # Fall through to AST fallback
+
+            # Fall back to AST (either LLM disabled or LLM failed)
+            logger.info(f"Using AST chunking (fallback from threshold/LLM failure): {filepath}")
             return self._strategy_to_chunks(ast_strategy)
 
         except Exception as e:
-            logger.error(f"Semantic chunking error: {e}", detail=str(e))
+            logger.error(
+                f"Fatal error in semantic chunking for {filepath}: {type(e).__name__}: {e}"
+            )
+            logger.debug(f"Stack trace: {e}", exc_info=True)
             return self._fallback_chunking(code)
 
     def _ast_chunking_strategy(self, code: str, structure: CodeStructure) -> ChunkingStrategy:

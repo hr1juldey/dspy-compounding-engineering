@@ -1,29 +1,21 @@
-"""
-Codebase Indexer module for Compounding Engineering.
+"""Codebase Indexer - orchestrates file indexing via service layer."""
 
-This module manages the indexing of the codebase into Qdrant for semantic search.
-It handles file crawling, chunking, embedding generation, and incremental updates.
-"""
-
-import glob
+import asyncio
 import os
-import subprocess
-import uuid
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import (
-    FieldCondition,
-    Filter,
-    MatchValue,
-    PointStruct,
-)
 from rich.console import Console
 
 from utils.io.logger import logger
-from utils.io.safe import run_safe_command
 from utils.knowledge.batch_embedder import BatchEmbedder
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+from utils.knowledge.codebase_search import CodebaseSearch
+from utils.knowledge.embeddings_dspy import (
+    DSPyEmbeddingProvider as EmbeddingProvider,
+)
+from utils.knowledge.file_indexer import FileIndexer
+from utils.knowledge.indexer_metadata import IndexerMetadata
 from utils.knowledge.semantic_chunker import SemanticChunker
 from utils.knowledge.utils import CollectionManagerMixin
 
@@ -31,9 +23,7 @@ console = Console()
 
 
 class CodebaseIndexer(CollectionManagerMixin):
-    """
-    Manages indexing of the codebase using vector embeddings.
-    """
+    """Orchestrates codebase indexing via service layer."""
 
     def __init__(
         self,
@@ -41,27 +31,24 @@ class CodebaseIndexer(CollectionManagerMixin):
         embedding_provider: EmbeddingProvider,
         collection_name: str,
     ):
-        # Validate collection name has hash suffix (required for multi-session/multi-user)
         if not any(c in collection_name for c in "_-"):
-            raise ValueError(
-                f"Collection name '{collection_name}' must include a hash suffix "
-                "(e.g., 'codebase_abc123') to prevent multi-session/multi-user conflicts"
-            )
+            raise ValueError(f"Collection '{collection_name}' needs hash suffix")
 
         self.client = qdrant_client
         self.embedding_provider = embedding_provider
         self.collection_name = collection_name
         self.vector_db_available = self.client is not None
 
-        # Initialize batch embedder for 4x speedup
+        # Service layer initialization
         self.batch_embedder = BatchEmbedder(embedding_provider)
-
-        # Initialize semantic chunker (optional, controlled by env var)
-        self.use_semantic_chunking = os.getenv("USE_SEMANTIC_CHUNKING", "true").lower() == "true"
-        if self.use_semantic_chunking:
-            self.semantic_chunker = SemanticChunker()
-        else:
-            self.semantic_chunker = None
+        self.metadata = IndexerMetadata(qdrant_client, collection_name)
+        # Always use AST chunking (fast, deterministic)
+        # LLM validation is controlled separately via USE_LLM_CHUNKING_VALIDATION
+        semantic_chunker = SemanticChunker()
+        self.file_indexer = FileIndexer(
+            qdrant_client, collection_name, self.batch_embedder, semantic_chunker
+        )
+        self.search = CodebaseSearch(qdrant_client, collection_name, embedding_provider)
 
         if self.vector_db_available:
             self._ensure_collection()
@@ -72,275 +59,81 @@ class CodebaseIndexer(CollectionManagerMixin):
             collection_name=self.collection_name,
             vector_size=self.embedding_provider.vector_size,
             force_recreate=force_recreate,
-            enable_sparse=False,  # Codebase currently only uses dense
+            enable_sparse=False,
             registry_flag="codebase_ensured",
         )
 
-    def _get_indexed_files_metadata(self) -> Dict[str, float]:
-        """
-        Retrieve metadata for all indexed files to enable smart incremental indexing.
-        Returns: Dict[file_path, last_modified_timestamp]
-        """
-        if not self.vector_db_available:
-            return {}
+    def index_codebase(
+        self,
+        root_dir: str,
+        force_recreate: bool = False,
+        progress_callback: Optional[callable] = None,
+    ) -> dict:
+        """Index codebase - delegates to async or sequential mode."""
+        import time
 
-        indexed_files = {}
-        offset = None
+        start_time = time.time()
+        root_path = Path(root_dir)
+        all_files = list(root_path.rglob("*.py"))
 
-        while True:
-            # Scroll through points to get paths and mtimes
-            # We filter for points that are the 'first chunk' (chunk_index=0) to avoid duplicates
-            # or we could just aggregate. Iterating chunk 0 is efficient.
-            try:
-                scroll_result = self.client.scroll(
-                    collection_name=self.collection_name,
-                    scroll_filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="type",
-                                match=MatchValue(value="code_file"),
-                            )
-                        ]
-                    ),
-                    limit=10000,  # Should be enough for most repos
-                    with_payload=True,
-                    with_vectors=False,
-                    offset=offset,
-                )
-                points, offset = scroll_result
+        if not all_files:
+            logger.warning(f"No Python files in {root_dir}")
+            return {"files": 0, "entities": 0, "time_sec": 0.0}
 
-                for point in points:
-                    if point.payload and "path" in point.payload:
-                        mtime = point.payload.get("last_modified", 0.0)
-                        indexed_files[point.payload["path"]] = mtime
-
-                if offset is None:
-                    break
-            except Exception:
-                # If collection doesn't exist or other error
-                break
-
-        return indexed_files
-
-    def _chunk_text(self, text: str, size: int = 2000, overlap: int = 200) -> List[str]:
-        """Split text into chunks with overlap."""
-        if not text:
-            return []
-
-        chunks = []
-        start = 0
-        text_len = len(text)
-
-        while start < text_len:
-            end = start + size
-            chunk = text[start:end]
-            chunks.append(chunk)
-            start += size - overlap
-
-        return chunks
-
-    def index_codebase(self, root_dir: str = ".", force_recreate: bool = False) -> None:
-        """
-        Index the codebase using vector embeddings.
-        Uses smart indexing to skip unchanged files.
-        """
         if force_recreate:
+            logger.info("Force recreating collection")
             self._ensure_collection(force_recreate=True)
 
-        if not self.vector_db_available:
-            logger.error("Vector DB not available. Cannot index codebase.")
-            return
+        # Filter files using .gitignore patterns
+        from utils.knowledge.gitignore_parser import GitignoreParser
 
-        try:
-            # 1. Get list of tracked files
-            cmd = ["git", "ls-files"]
-            result = run_safe_command(cmd, cwd=root_dir, capture_output=True, text=True, check=True)
-            files = result.stdout.splitlines()
-        except subprocess.CalledProcessError:
-            logger.warning("Not a git repository. Indexing all files...")
-            # Fallback to glob
-            files = [
-                os.path.relpath(f, root_dir)
-                for f in glob.glob(os.path.join(root_dir, "**/*"), recursive=True)
-                if os.path.isfile(f)
-            ]
-        except Exception as e:
-            console.print(f"[red]Failed to list files: {e}[/red]")
-            return
+        gitignore = GitignoreParser(root_dir)
+        python_files = gitignore.filter_files(all_files)
 
-        # 2. Get current index state
-        logger.info("Fetching existing index state...")
-        indexed_files = self._get_indexed_files_metadata()
+        # Get indexed files metadata
+        indexed_files = self.metadata.get_indexed_files_metadata()
 
-        # 3. Process files
-        updated_count = 0
-        skipped_count = 0
+        # Prepare file paths for processing (filepath, full_path tuples)
+        files_to_process = [(str(f.relative_to(root_path)), str(f)) for f in python_files]
 
-        # extensions to ignore
-        ignore_exts = {
-            ".pyc",
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".gif",
-            ".ico",
-            ".svg",
-            ".woff",
-            ".woff2",
-            ".ttf",
-            ".eot",
-            ".mp4",
-            ".mov",
-            ".zip",
-            ".tar",
-            ".gz",
-            ".pkl",
-            ".bin",
-            ".exe",
-            ".dll",
-            ".so",
-            ".lock",
-            ".pdf",
-        }
+        logger.info(f"Indexing {len(files_to_process)} files")
 
-        # directories to ignore
-        ignore_dirs = {
-            "plans/",
-            "todos/",
-            "docs/",
-            ".knowledge/",
-            ".venv/",
-            "site/",
-            "qdrant_storage/",
-        }
+        # Process files (async or sequential)
+        use_async = os.getenv("USE_ASYNC_INDEXING", "true").lower() == "true"
 
-        with console.status(f"Indexing {len(files)} files...") as status:
-            for filepath in files:
-                # Skip ignored extensions
-                _, ext = os.path.splitext(filepath)
-                if ext.lower() in ignore_exts:
-                    continue
+        if use_async:
+            from utils.knowledge.async_indexer import AsyncFileIndexer
 
-                # Skip ignored directories
-                if any(filepath.startswith(d) for d in ignore_dirs):
-                    continue
-
-                full_path = os.path.join(root_dir, filepath)
-                if not os.path.exists(full_path):
-                    continue
-
-                try:
-                    if self._index_single_file(filepath, full_path, indexed_files):
-                        updated_count += 1
-                    else:
-                        skipped_count += 1
-
-                    status.update(f"Indexed: {filepath}")
-
-                except Exception as e:
-                    console.print(f"[dim red]Failed to index {filepath}: {e}[/dim red]")
-
-        logger.success(f"Indexing complete. Updated: {updated_count}, Skipped: {skipped_count}")
-
-    def _index_single_file(
-        self, filepath: str, full_path: str, indexed_files: Dict[str, float]
-    ) -> bool:
-        """
-        Index a single file if it has changed.
-        Returns True if updated, False if skipped.
-        """
-        mtime = os.path.getmtime(full_path)
-
-        # Check if needs update
-        if filepath in indexed_files and indexed_files[filepath] >= mtime:
-            return False
-
-        # Read content
-        try:
-            with open(full_path, "r", encoding="utf-8") as f:
-                content = f.read()
-        except UnicodeDecodeError:
-            # likely binary
-            return False
-
-        # Chunk content (use semantic chunking for supported file types if enabled)
-        semantic_extensions = (".py", ".md", ".json")
-        filepath_lower = filepath.lower()
-        if (
-            self.use_semantic_chunking
-            and self.semantic_chunker
-            and filepath_lower.endswith(semantic_extensions)
-        ):
-            chunks = self.semantic_chunker.chunk(content, filepath)
-        else:
-            chunks = self._chunk_text(content)
-
-        # Batch embed all chunks for 4x speedup (saturates Ollama)
-        embedding_results = self.batch_embedder.embed_texts_batch(chunks)
-
-        # Build Qdrant points with embedded vectors
-        points = []
-        for _i, (idx, vector) in enumerate(embedding_results):
-            chunk = chunks[idx]
-
-            # ID: uuid5(NAMESPACE_DNS, file_path + chunk_index)
-            unique_str = f"{filepath}::{idx}"
-            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_str))
-
-            payload = {
-                "path": filepath,
-                "content": chunk,
-                "chunk_index": idx,
-                "total_chunks": len(chunks),
-                "last_modified": mtime,
-                "type": "code_file",
-            }
-
-            points.append(PointStruct(id=point_id, vector=vector, payload=payload))
-
-        if points:
-            # Upsert new chunks (overwrites same IDs, handles expansion)
-            self.client.upsert(collection_name=self.collection_name, points=points)
-
-            # Clean up stale chunks (if file shrunk)
-            # We delete points for this path where chunk_index >= current total_chunks
-            self.client.delete(
-                collection_name=self.collection_name,
-                points_selector=Filter(
-                    must=[
-                        FieldCondition(key="path", match=MatchValue(value=filepath)),
-                        FieldCondition(key="chunk_index", range={"gte": len(chunks)}),
-                    ]
-                ),
+            async_indexer = AsyncFileIndexer(self, max_concurrency=20)
+            stats = asyncio.run(
+                async_indexer.index_files_parallel(
+                    files_to_process, indexed_files, progress_callback
+                )
             )
-            return True
+        else:
+            updated = skipped = 0
+            for filepath, full_path in files_to_process:
+                try:
+                    if self.file_indexer.index_file(filepath, full_path, indexed_files):
+                        updated += 1
+                    else:
+                        skipped += 1
+                    if progress_callback:
+                        progress_callback(filepath, updated + skipped, len(files_to_process))
+                except Exception as e:
+                    logger.error(f"Failed to index {filepath}: {e}")
 
-        return False
+            stats = {"updated": updated, "skipped": skipped}
+
+        elapsed_time = time.time() - start_time
+        stats["time_sec"] = elapsed_time
+
+        logger.success(
+            f"Indexing complete: {stats['updated']} updated, "
+            f"{stats['skipped']} skipped in {elapsed_time:.1f}s"
+        )
+        return stats
 
     def search_codebase(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """
-        Search for relevant code snippets.
-        """
-        if not self.vector_db_available:
-            return []
-
-        try:
-            query_vector = self.embedding_provider.get_embedding(query)
-
-            search_result = self.client.query_points(
-                collection_name=self.collection_name, query=query_vector, limit=limit
-            ).points
-
-            # Returning chunks is usually better for specific context.
-            results = []
-            for hit in search_result:
-                payload = hit.payload
-                # Add score for context
-                payload["score"] = hit.score
-                results.append(payload)
-
-            return results
-
-        except Exception as e:
-            logger.error("Codebase search failed", str(e))
-            return []
+        """Search codebase via CodebaseSearch service."""
+        return self.search.search(query, limit)

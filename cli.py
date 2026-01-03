@@ -7,6 +7,7 @@ from rich.console import Console
 
 from server.config import configure_dspy
 from utils.io import get_system_status
+from utils.io.logger import configure_logging
 from utils.knowledge import KnowledgeBase
 from workflows.analyze import run_analyze
 from workflows.check import run_check
@@ -37,6 +38,13 @@ def main(
             resolve_path=True,
         ),
     ] = None,
+    skip_warmup: Annotated[
+        bool,
+        typer.Option(
+            "--skip-warmup",
+            help="Skip LLM/embedder warmup test on startup",
+        ),
+    ] = False,
 ):
     """
     Compounding Engineering (DSPy Edition)
@@ -54,9 +62,25 @@ def main(
     - codify          - Codify feedback into knowledge base
     - compress-kb     - Compress AI.md knowledge base
     - index           - Index codebase for semantic search
+    - warmup          - Test LLM and embedder initialization
     - status          - System diagnostics
     """
+    configure_logging()
     configure_dspy(env_file=str(env_file) if env_file else None)
+
+    # Auto-warmup on first invocation (can be skipped with --skip-warmup)
+    if not skip_warmup:
+        try:
+            from utils.knowledge.warmup import WarmupTest
+
+            tester = WarmupTest()
+            tester.run_all()
+        except Exception as e:
+            console.print(
+                f"\n[bold red]System warmup failed:[/bold red] {e}\n"
+                f"[dim]Use --skip-warmup to bypass this check[/dim]"
+            )
+            raise typer.Exit(code=1) from e
 
 
 @app.command()
