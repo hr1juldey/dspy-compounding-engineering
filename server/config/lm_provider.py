@@ -108,7 +108,13 @@ def configure_dspy(env_file: str | None = None):
             max_tokens=max_tokens,
         )
     elif provider == "ollama":
-        lm = dspy.LM(model=f"ollama/{model_name}", max_tokens=max_tokens)
+        # Ollama API base (without /v1 suffix - litellm adds it)
+        api_base = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/v1")
+        lm = dspy.LM(
+            model=f"ollama_chat/{model_name}",
+            api_base=api_base,
+            max_tokens=max_tokens,
+        )
     elif provider == "openrouter":
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
