@@ -57,3 +57,9 @@ def get_settings() -> ServerSettings:
     if _settings is None:
         _settings = ServerSettings()
     return _settings
+
+
+# Create settings instance for easy access
+settings = get_settings()
+
+__all__ = ["ServerSettings", "get_settings", "settings"]

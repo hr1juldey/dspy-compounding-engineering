@@ -1,91 +1,83 @@
-"""Warmup utility for LLM and embedder initialization with error propagation."""
+"""Warmup utility using DSPy signatures with centrally configured LM/embedder."""
 
+import math
 import time
+from datetime import datetime
 from typing import Tuple
 
 import dspy
+from pydantic import BaseModel, Field
 
+from server.config.service_registry import registry
 from utils.io.logger import logger
-from utils.knowledge.embeddings_dspy import DSPyEmbeddingProvider as EmbeddingProvider
+
+
+class TimeFormatOutput(BaseModel):
+    """Output format for time conversion."""
+
+    formatted_time: str = Field(description="Time in AM/PM format (e.g. 3:45 PM)")
+
+
+class TimeFormatter(dspy.Signature):
+    """Convert 24-hour time to 12-hour AM/PM format."""
+
+    current_time: str = dspy.InputField(description="Current time in 24-hour format (HH:MM)")
+    time_output: TimeFormatOutput = dspy.OutputField(description="Time formatted as 12-hour AM/PM")
+
+
+class SentencePairOutput(BaseModel):
+    """Output format for sentence pair generation."""
+
+    present_tense: str = Field(description="Sentence about the time in present tense")
+    future_tense: str = Field(description="Sentence about the time in future tense")
+
+
+class SentencePairGenerator(dspy.Signature):
+    """Generate two sentences about the current time - one present, one future tense."""
+
+    current_time: str = dspy.InputField(description="Current time in AM/PM format")
+    sentences: SentencePairOutput = dspy.OutputField(description="Two sentences about the time")
 
 
 class WarmupTest:
-    """Test LLM and embedder initialization with actual API calls."""
+    """Test LLM and embedder using DSPy signatures (centrally configured instances)."""
 
-    def __init__(self):
-        self.embedding_provider = None
-        self.llm_config = None
-
-    def warmup_embedder(self, test_text: str = "warmup test") -> Tuple[bool, str]:
-        """
-        Test embedder by generating a test embedding.
-
-        Args:
-            test_text: Text to embed for testing
-
-        Returns:
-            Tuple[success, message]
-
-        Raises:
-            Exception: If embedder fails to initialize or generate embedding
-        """
+    def warmup_llm(self) -> Tuple[bool, str]:
+        """Test LLM using DSPy ChainOfThought signature."""
         try:
-            logger.info("Warming up embedder...")
+            logger.info("Warming up LLM with DSPy ChainOfThought...")
+            logger.info("Note: First call may take 60-120s to load model...")
             start_time = time.time()
 
-            self.embedding_provider = EmbeddingProvider()
-            embedding = self.embedding_provider.get_embedding(test_text)
-
-            elapsed = time.time() - start_time
-            embedding_dim = len(embedding) if embedding else 0
-
-            if not embedding or embedding_dim == 0:
-                raise ValueError("Embedder returned empty embedding")
-
-            msg = f"✓ Embedder ready: {embedding_dim}D embedding generated in {elapsed:.2f}s"
-            logger.success(msg)
-            return True, msg
-
-        except Exception as e:
-            error_msg = f"✗ Embedder failed: {type(e).__name__}: {e}"
-            logger.error(error_msg)
-            raise
-
-    def warmup_llm(self, test_prompt: str = "Say 'ready'") -> Tuple[bool, str]:
-        """
-        Test LLM by generating a test response.
-
-        Args:
-            test_prompt: Prompt to send to LLM for testing
-
-        Returns:
-            Tuple[success, message]
-
-        Raises:
-            Exception: If LLM fails to initialize or generate response
-        """
-        try:
-            logger.info("Warming up LLM...")
-            start_time = time.time()
-
-            # Get current LM from DSPy settings
+            # Check DSPy LM is configured
             if not hasattr(dspy.settings, "lm") or dspy.settings.lm is None:
-                raise RuntimeError(
-                    "DSPy LM not configured. Call configure_dspy() before warmup_llm()"
-                )
+                raise RuntimeError("DSPy LM not configured. Call configure_dspy() first")
 
-            lm = dspy.settings.lm
+            # Use ChainOfThought with time formatting task
+            time_formatter = dspy.ChainOfThought(TimeFormatter)
 
-            # Make a test call to the LLM
-            response = lm(test_prompt, max_tokens=10)
+            # Get current time in 24-hour format
+            now = datetime.now()
+            current_time_24h = now.strftime("%H:%M")
+
+            # Ask LLM to convert to AM/PM format
+            result = time_formatter(current_time=current_time_24h)
 
             elapsed = time.time() - start_time
-            response_text = response[0] if isinstance(response, (list, tuple)) else str(response)
 
-            if not response_text or len(response_text.strip()) == 0:
-                raise ValueError("LLM returned empty response")
+            # Validate response
+            if not result or not hasattr(result, "time_output"):
+                raise ValueError("LLM returned invalid response structure")
 
-            msg = f"✓ LLM ready: Got response in {elapsed:.2f}s: {response_text[:50]}"
+            formatted_time = result.time_output.formatted_time
+            if not formatted_time or len(formatted_time.strip()) == 0:
+                raise ValueError("LLM returned empty formatted_time")
+
+            # Check for AM/PM
+            if "AM" not in formatted_time.upper() and "PM" not in formatted_time.upper():
+                logger.warning(f"LLM response missing AM/PM: '{formatted_time}'")
+
+            msg = f"✓ LLM ready: Responded in {elapsed:.2f}s with '{formatted_time}'"
             logger.success(msg)
             return True, msg
 
@@ -94,64 +86,82 @@ class WarmupTest:
             logger.error(error_msg)
             raise
 
-    def warmup_dspy_module(self) -> Tuple[bool, str]:
-        """
-        Test DSPy module initialization (ChainOfThought).
-
-        Returns:
-            Tuple[success, message]
-
-        Raises:
-            Exception: If DSPy module fails
-        """
+    def warmup_embedder(self) -> Tuple[bool, str]:
+        """Test embedder using LLM-generated dynamic sentences."""
         try:
-            logger.info("Warming up DSPy ChainOfThought...")
+            logger.info("Warming up embedder with LLM-generated sentences...")
             start_time = time.time()
 
-            from utils.knowledge.chunking_strategies import ChunkingStrategyGenerator
+            # Get centrally configured KB with embedder
+            kb = registry.get_kb()
+            if not kb or not hasattr(kb, "embedding_provider"):
+                raise RuntimeError("KnowledgeBase not initialized")
 
-            generator = ChunkingStrategyGenerator()
+            embedding_provider = kb.embedding_provider
 
-            # Verify the generator has the ChainOfThought module
-            if not hasattr(generator, "cot"):
-                raise RuntimeError("ChunkingStrategyGenerator missing ChainOfThought")
+            # Generate dynamic sentences using LLM (ensures no caching)
+            now = datetime.now()
+            current_time_ampm = now.strftime("%I:%M %p")
 
+            sentence_gen = dspy.ChainOfThought(SentencePairGenerator)
+            result = sentence_gen(current_time=current_time_ampm)
+
+            if not result or not hasattr(result, "sentences"):
+                raise ValueError("LLM failed to generate sentence pair")
+
+            present_sentence = result.sentences.present_tense
+            future_sentence = result.sentences.future_tense
+
+            if not present_sentence or not future_sentence:
+                raise ValueError("LLM returned empty sentences")
+
+            logger.info(f"Present: {present_sentence}")
+            logger.info(f"Future: {future_sentence}")
+
+            # Embed both sentences (dynamic content ensures no embedding cache)
+            emb_present = embedding_provider.get_embedding(present_sentence)
+            emb_future = embedding_provider.get_embedding(future_sentence)
+
+            # Validate embeddings are non-empty and have valid values
+            for name, emb in [("present", emb_present), ("future", emb_future)]:
+                if not emb or len(emb) == 0:
+                    raise ValueError(f"Empty embedding for {name} tense sentence")
+                if any(not math.isfinite(v) for v in emb):
+                    raise ValueError(f"Invalid values (NaN/inf) in {name} tense embedding")
+                # Verify non-zero values
+                non_zero = sum(1 for v in emb if v != 0.0)
+                if non_zero == 0:
+                    raise ValueError(f"All-zero embedding for {name} tense sentence")
+
+            embedding_dim = len(emb_present)
             elapsed = time.time() - start_time
-            msg = f"✓ DSPy module ready in {elapsed:.2f}s"
+
+            msg = (
+                f"✓ Embedder ready: {embedding_dim}D, "
+                f"embedded 2 LLM-generated sentences in {elapsed:.2f}s"
+            )
             logger.success(msg)
             return True, msg
 
         except Exception as e:
-            error_msg = f"✗ DSPy module failed: {type(e).__name__}: {e}"
+            error_msg = f"✗ Embedder failed: {type(e).__name__}: {e}"
             logger.error(error_msg)
             raise
 
     def run_all(self) -> bool:
-        """
-        Run all warmup tests in sequence.
-
-        Returns:
-            True if all pass
-
-        Raises:
-            Exception: On first failure (with proper error message)
-        """
+        """Run all warmup tests using DSPy signatures."""
         logger.info("=" * 60)
-        logger.info("Starting LLM & Embedder Warmup Tests")
+        logger.info("Starting LLM & Embedder Warmup (DSPy Signatures)")
         logger.info("=" * 60)
 
         try:
-            # Test 1: Embedder
-            logger.info("\n[1/3] Testing Embedder...")
-            self.warmup_embedder()
-
-            # Test 2: LLM
-            logger.info("\n[2/3] Testing LLM...")
+            # Test 1: LLM with ChainOfThought
+            logger.info("\n[1/2] Testing LLM...")
             self.warmup_llm()
 
-            # Test 3: DSPy Module
-            logger.info("\n[3/3] Testing DSPy Module...")
-            self.warmup_dspy_module()
+            # Test 2: Embedder
+            logger.info("\n[2/2] Testing Embedder...")
+            self.warmup_embedder()
 
             logger.info("\n" + "=" * 60)
             logger.success("✓ All warmup tests passed!")
