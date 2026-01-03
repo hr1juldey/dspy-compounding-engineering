@@ -26,13 +26,42 @@ class MultiHopResult(BaseModel):
 
 
 class MultiHopSearchSignature(dspy.Signature):
-    """
-    Multi-hop search over code graph.
+    """Search for dependency paths between code entities using multi-hop graph traversal.
 
-    Strategy:
-    1. HNSW vector search for initial candidates
-    2. Graph traversal to find path
-    3. PageRank re-ranking
+    INPUTS:
+    - start_query: Natural language query or entity name for the starting point
+      (e.g., "process_data function", "authentication module", "User class")
+    - target_query: Natural language query or entity name for the target to find
+      (e.g., "database connection", "logging handler", "error handling")
+    - max_hops: Maximum number of relationship hops to traverse (1-5):
+      * 1: Direct dependencies only
+      * 2: Two-hop dependencies (A → B → C)
+      * 3: Three-hop dependencies (typical default)
+      * 4-5: Extended search for distant relationships
+
+    OUTPUT:
+    You must return a MultiHopResult object containing:
+    - found: Boolean indicating whether a path was found (true/false)
+    - hops: Number of hops in the discovered path (0 if not found)
+    - path: List of dictionaries representing the dependency path from start to target.
+      Each dictionary contains:
+      * "entity": Entity name
+      * "type": Entity type (Function, Class, Method, Import, Module)
+      * "file": File path where entity is defined
+      * "line": Line number (use 0 if not available)
+      Path should be ordered from start to target.
+    - alternative_paths: List of alternative paths (each path is a list of entity dicts).
+      Include multiple paths if they exist, ranked by relevance or length.
+    - reasoning: Explanation of how the path was discovered and why this path is relevant
+      (e.g., "Found via 3 hops: AuthService → UserManager → Database → Logger")
+
+    TASK INSTRUCTIONS:
+    - Search for entities matching the start_query and target_query using semantic search
+    - Find the shortest dependency path between start and target entities
+    - Limit path length to max_hops
+    - Include alternative paths if multiple routes exist
+    - Explain the reasoning behind the discovered path
+    - If no path exists within max_hops, return found=false with explanatory reasoning
     """
 
     start_query: str = dspy.InputField(desc="Starting point (entity or concept)")

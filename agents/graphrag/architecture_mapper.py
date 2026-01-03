@@ -23,10 +23,47 @@ from utils.memory.module import MemoryPredict
 
 
 class ArchitectureMapperSignature(dspy.Signature):
-    """
-    Map system architecture using graph analysis.
+    """Map and analyze system architecture using graph-based structural analysis.
 
-    Returns architecture summary, not recommendations.
+    INPUTS:
+    - analysis_scope: Scope of architectural analysis. Options:
+      * "Global": Analyze the entire system architecture
+      * "Module": Focus on a specific module's internal structure
+      * "Subsystem": Analyze a subsystem's architectural patterns
+    - focus_area: Optional filter to narrow analysis to specific module/subsystem path
+      (e.g., "agents/graphrag" or "utils/knowledge"). Leave empty for full scope.
+
+    OUTPUT:
+    You must return an ArchitectureReport object containing:
+    - summary: One-line summary of the architecture
+      (e.g., "System has 10 clusters, 20 hub entities")
+    - hubs: List of EntityHub objects for the most important entities (by PageRank).
+      Each EntityHub contains:
+      * entity_id: Unique identifier
+      * name: Entity name
+      * type: Entity type (Function, Class, Module)
+      * pagerank: PageRank score (0.0 to 1.0, higher = more central)
+      * file_path: File location
+    - clusters: Dictionary mapping cluster IDs to ClusterInfo objects. Each ClusterInfo:
+      * cluster_id: Unique cluster identifier
+      * size: Number of entities in the cluster
+      * top_entities: Names of the 5 most important entities in the cluster
+      * files: List of files that belong to this cluster
+    - layer_analysis: Dictionary mapping architectural layer names to entity lists:
+      * "Presentation": UI/API layer entities
+      * "Application": Business logic layer entities
+      * "Domain": Core domain model entities
+      (Add other layers as appropriate: Infrastructure, Persistence, etc.)
+    - bottlenecks: List of entity names that are architectural bottlenecks
+      (high PageRank + high fanout = potential single points of failure)
+
+    TASK INSTRUCTIONS:
+    - Use PageRank to identify hub entities (most connected/important)
+    - Use graph clustering to detect module boundaries and cohesive groups
+    - Classify entities into architectural layers based on file paths and relationships
+    - Identify bottlenecks as entities with both high centrality and high dependency fanout
+    - Focus on structural analysis, NOT recommendations (describe what exists, not what
+      should change)
     """
 
     analysis_scope: str = dspy.InputField(desc="Global|Module|Subsystem", default="Global")

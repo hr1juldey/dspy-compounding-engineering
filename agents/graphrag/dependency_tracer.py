@@ -20,10 +20,47 @@ from utils.memory.module import MemoryPredict
 
 
 class DependencyTracerSignature(dspy.Signature):
-    """
-    Trace multi-hop dependencies and detect cycles.
+    """Trace multi-hop dependencies between entities and detect circular dependencies.
 
-    Returns dependency paths and cycle warnings.
+    INPUTS:
+    - source_entity: Name of the starting entity (function, class, or module name)
+    - target_entity: Name of the target entity to find path to, OR the special value
+      "detect_cycles" to search for circular dependencies starting from source_entity.
+      Leave empty to analyze all paths from source.
+
+    OUTPUT:
+    You must return a DependencyReport object containing:
+    - summary: One-line summary of dependency analysis
+      (e.g., "Found 2 paths, 1 circular dependency" or "Found path with 3 hops")
+    - shortest_path: List of EntityDetails representing the shortest dependency path from
+      source to target (None if no path exists or if detecting cycles). Path ordered from
+      source to target. Each EntityDetails contains:
+      * name: Entity name
+      * type: Entity type (Function, Class, Method, Import, Module)
+      * file_path: File location
+      * line_start: Starting line number
+    - all_paths: List of all dependency paths found (each path is a list of EntityDetails).
+      Include multiple paths if they exist. Empty list if no paths found.
+    - circular_dependencies: List of CycleInfo objects for circular dependencies detected.
+      Each CycleInfo contains:
+      * cycle_path: List of entity names forming the cycle (e.g., ["A", "B", "C", "A"])
+      * cycle_type: Type of cycle ("Import", "Call", "Inheritance", or "Dependency")
+    - coupling_metrics: Dictionary with coupling measurements:
+      * "path_length": Number of hops in the dependency chain
+      * "import_depth": Number of import levels
+      * "fanout": Number of dependencies from source
+      (Include metrics that are relevant to the analysis)
+    - recommendations: List of actionable recommendations based on the dependency analysis
+      (e.g., "Break cycle at EntityA", "Consider reducing import depth",
+      "Path found - entities are connected")
+
+    TASK INSTRUCTIONS:
+    - Use graph traversal to find dependency paths between entities
+    - When target_entity is "detect_cycles", focus on finding circular dependencies
+    - Report the shortest path first, then include alternative paths
+    - Identify cycle types (import cycles, call cycles, inheritance cycles)
+    - Calculate coupling metrics to assess dependency health
+    - Provide specific recommendations for reducing coupling or breaking cycles
     """
 
     source_entity: str = dspy.InputField(desc="Start entity")

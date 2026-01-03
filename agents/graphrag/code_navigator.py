@@ -22,10 +22,56 @@ from utils.memory.module import MemoryPredict
 
 
 class CodeNavigatorSignature(dspy.Signature):
-    """
-    Navigate codebase structure using entity relationships.
+    """Navigate codebase structure by exploring entity relationships and dependencies.
 
-    Returns pre-analyzed structure, not raw code.
+    INPUTS:
+    - query: Name of the entity to explore (function, class, method name) or a navigation
+      query (e.g., "find callers of process_data")
+    - entity_type: Optional filter to narrow search to specific entity type. Options:
+      * "Function": Standalone functions
+      * "Class": Class definitions
+      * "Method": Class methods
+      * "Import": Import statements
+      * "Module": Python modules
+      * "" (empty): Search all entity types
+    - max_depth: How many relationship hops to explore (1-3):
+      * 1: Direct relationships only (immediate callers/callees)
+      * 2: Two-hop relationships (callers of callers)
+      * 3: Three-hop relationships (full dependency chain)
+
+    OUTPUT:
+    You must return a CodeNavigationReport object containing:
+    - summary: One-line summary of navigation results
+      (e.g., "Found 12 callers across 5 files")
+    - entity_details: EntityDetails object for the target entity with:
+      * name: Entity name
+      * type: Entity type (Function, Class, Method, Import, Module)
+      * file_path: File location
+      * line_start: Starting line number
+      * signature: Function/method signature (if applicable)
+    - relationships: Dictionary mapping relationship types to lists of RelatedEntity objects.
+      Common relationship types:
+      * "calls": Entities called by this entity
+      * "called_by": Entities that call this entity
+      * "imports": Modules imported by this entity
+      * "imported_by": Modules that import this entity
+      * "inherits": Classes this class inherits from
+      * "inherited_by": Classes that inherit from this class
+      Each RelatedEntity contains: name, type, file_path, relation_type
+    - impact_scope: Scope of the entity's influence:
+      * "Local (1 file)": Entity only used within its own file
+      * "Module (2-3 files)": Entity used across a few related files
+      * "System-wide (N files)": Entity used broadly across the system
+    - next_actions: List of suggested follow-up exploration actions
+      (e.g., "Explore calls", "Explore called_by", "View source code")
+
+    TASK INSTRUCTIONS:
+    - Find the target entity using the query string
+    - Retrieve relationships up to max_depth hops
+    - Group relationships by type (calls, called_by, imports, etc.)
+    - Assess impact scope based on file spread
+    - Return pre-analyzed structure (relationships, not raw code)
+    - Suggest logical next navigation steps
     """
 
     query: str = dspy.InputField(desc="Entity name or navigation query")

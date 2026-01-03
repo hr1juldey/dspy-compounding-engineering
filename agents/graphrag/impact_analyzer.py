@@ -19,10 +19,46 @@ from utils.memory.module import MemoryPredict
 
 
 class ImpactAnalyzerSignature(dspy.Signature):
-    """
-    Analyze impact of changing an entity.
+    """Analyze the impact of changing a code entity (blast radius calculation).
 
-    Returns impact analysis with change scenarios.
+    INPUTS:
+    - target_entity: The name of the entity to analyze (function, class, or method name)
+    - change_type: Type of change being considered. Options:
+      * "Modify": Changing the entity's implementation
+      * "Delete": Removing the entity entirely
+      * "Refactor": Restructuring without changing behavior
+      * "Rename": Changing the entity's name
+
+    OUTPUT:
+    You must return an ImpactReport object containing:
+    - summary: One-line summary of the impact (e.g., "23 entities across 8 files affected")
+    - direct_dependents: List of EntityDetails for entities that directly depend on the target
+      (1st degree dependencies). Each EntityDetails contains:
+      * name: Entity name
+      * type: Entity type (Function, Class, Method, Import, Module)
+      * file_path: File location
+      * line_start: Starting line number
+      * signature: Function/method signature (if applicable)
+    - indirect_dependents: List of EntityDetails for entities that indirectly depend on target
+      (2nd-3rd degree dependencies, following the dependency chain)
+    - critical_paths: List of dependency paths to critical entities. Each path is a list of
+      entity names showing the dependency chain (e.g., ["target", "caller1", "caller2"])
+    - blast_radius: Dictionary with impact counts:
+      * files: Number of unique files affected
+      * functions: Number of functions/methods affected
+      * classes: Number of classes affected
+    - risk_assessment: Overall risk level based on blast radius size:
+      * "Low": < 10 entities affected
+      * "Medium": 10-50 entities affected
+      * "High": > 50 entities affected
+      * "Critical": For changes affecting core system entities
+    - recommended_approach: Suggested approach for making the change safely
+
+    TASK INSTRUCTIONS:
+    - Calculate both direct (1-hop) and indirect (2-3 hop) dependencies
+    - Identify critical dependency paths using shortest path analysis
+    - Assess risk based on the scope of affected entities
+    - Provide actionable recommendations for safely implementing the change
     """
 
     target_entity: str = dspy.InputField(desc="Entity to analyze")
