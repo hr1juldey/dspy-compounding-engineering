@@ -14,11 +14,16 @@ celery_app = Celery(
     backend=settings.redis_url,
     include=[
         "server.infrastructure.celery.tasks.analyze",
-        "server.infrastructure.celery.tasks.work",
-        "server.infrastructure.celery.tasks.review",
-        "server.infrastructure.celery.tasks.garden",
         "server.infrastructure.celery.tasks.check",
+        "server.infrastructure.celery.tasks.codify",
+        "server.infrastructure.celery.tasks.compress_kb",
+        "server.infrastructure.celery.tasks.garden",
+        "server.infrastructure.celery.tasks.generate_command",
+        "server.infrastructure.celery.tasks.index_codebase",
         "server.infrastructure.celery.tasks.plan",
+        "server.infrastructure.celery.tasks.review",
+        "server.infrastructure.celery.tasks.triage",
+        "server.infrastructure.celery.tasks.work",
     ],
 )
 

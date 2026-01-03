@@ -17,8 +17,8 @@ class CompoundingPaths:
 
         Args:
             repo_root: Root of the repository. If None, auto-detect.
-            base_dir_name: Name of base directory (e.g., '.claude', '.ce').
-                          If None, reads from COMPOUNDING_DIR_NAME env var or defaults to '.claude'.
+            base_dir_name: Name of base directory (e.g., '.ce', '.claude', '.qwen').
+                          If None, reads from COMPOUNDING_DIR_NAME env var or defaults to '.ce'.
         """
         if repo_root is None:
             self.repo_root = self._find_repo_root()
@@ -26,7 +26,7 @@ class CompoundingPaths:
             self.repo_root = Path(repo_root).resolve()
 
         # Determine base directory name
-        dir_name = base_dir_name or os.getenv("COMPOUNDING_DIR_NAME", ".claude")
+        dir_name = base_dir_name or os.getenv("COMPOUNDING_DIR_NAME", ".ce")
         self.base_dir = self.repo_root / dir_name
         # Keep claude_dir as alias for backward compatibility
         self.claude_dir = self.base_dir
