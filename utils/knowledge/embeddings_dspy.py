@@ -9,6 +9,7 @@ import os
 
 import dspy
 import numpy as np
+from qdrant_client.models import SparseVector
 
 from utils.io.logger import logger
 from utils.knowledge.matryoshka_config import (
@@ -139,7 +140,7 @@ class DSPyEmbeddingProvider:
 
         return result
 
-    def get_sparse_embedding(self, text: str) -> dict:
+    def get_sparse_embedding(self, text: str) -> SparseVector:
         """Get sparse embedding for BM25 hybrid search (Qdrant format)."""
         from collections import Counter
 
@@ -148,8 +149,10 @@ class DSPyEmbeddingProvider:
         tokens = text_lower.replace(",", " ").replace(".", " ").split()
         # Count token frequencies
         counts = Counter(tokens)
-        # Create sparse vector with token index as key and frequency as value
-        return {str(i): float(freq) for i, (token, freq) in enumerate(counts.items())}
+        # Create sparse vector with indices and values for Qdrant
+        indices = list(range(len(counts)))
+        values = [float(freq) for _, freq in counts.items()]
+        return SparseVector(indices=indices, values=values)
 
     def _resolve_target_dimension(self, target_dimension: int | None) -> int:
         """
