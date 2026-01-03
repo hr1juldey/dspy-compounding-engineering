@@ -34,7 +34,34 @@ class ChunkingStrategy(BaseModel):
 
 
 class ChunkingSignature(dspy.Signature):
-    """Generate semantic chunking strategy for code"""
+    """Generate a semantic chunking strategy for Python source code.
+
+    INPUTS:
+    - code: The complete Python source code to be chunked
+    - ast_structure: AST-extracted structure showing functions, classes, and their line ranges
+    - target_chunk_size: Desired chunk size in characters (aim for this, but prioritize
+      semantic boundaries)
+    - min_overlap: Minimum character overlap between consecutive chunks for context
+      preservation
+
+    OUTPUT:
+    You must return a ChunkingStrategy object containing:
+    - reasoning: Explain your chunking decisions (why you split where you did)
+    - chunks: List of ChunkBoundary objects, each with:
+      * start_line: 1-indexed line number where chunk starts
+      * end_line: 1-indexed line number where chunk ends (inclusive)
+      * content: The actual text content of the chunk
+      * semantic_label: Description of what this chunk contains
+        (e.g., "function process_data", "class Config", "imports")
+      * rationale: Why this specific boundary was chosen
+    - confidence: Your self-assessed confidence in this chunking strategy (0.0 to 1.0)
+
+    STRATEGY:
+    - Maintain semantic boundaries (don't split functions/classes mid-definition)
+    - Group related code together (imports together, helper functions near their usage)
+    - Ensure chunks have context via minimum overlap
+    - Prefer natural boundaries (function/class definitions, blank lines, comments)
+    """
 
     code: str = dspy.InputField(description="Python source code to chunk")
     ast_structure: str = dspy.InputField(
@@ -46,7 +73,7 @@ class ChunkingSignature(dspy.Signature):
     min_overlap: int = dspy.InputField(default=200, description="Minimum overlap between chunks")
 
     chunking_strategy: ChunkingStrategy = dspy.OutputField(
-        description="Generated chunking strategy"
+        description="Generated chunking strategy with reasoning, chunks list, and confidence"
     )
 
 
