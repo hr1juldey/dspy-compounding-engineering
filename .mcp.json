@@ -2,14 +2,14 @@
   "mcpServers": {
     "compounding-engineering": {
       "command": "uv",
-      "args": ["run", "python", "-m", "server.mcp.server"],
+      "args": ["run", "python", "-m", "server.mcp.__main__"],
       "env": {
         "PYTHONPATH": "/home/riju279/Documents/Tools/Dspylearn/dspy-compounding-engineering"
       },
       "metadata": {
         "name": "Compounding Engineering",
         "description": "Autonomous software engineering agent with GraphRAG, knowledge base, and local LLM support",
-        "version": "1.0.0",
+        "version": "1.2.1",
         "status": "✅ Production Ready - 16/16 tools verified and working",
         "toolCount": 16,
         "transports": {
@@ -214,20 +214,19 @@
         },
         "tools": {
           "arithmetic": {
-            "add": {"description": "Add two numbers"},
-            "subtract": {"description": "Subtract two numbers"},
-            "multiply": {"description": "Multiply two numbers"},
-            "divide": {"description": "Divide two numbers"}
+            "add": { "description": "Add two numbers" },
+            "subtract": { "description": "Subtract two numbers" },
+            "multiply": { "description": "Multiply two numbers" },
+            "divide": { "description": "Divide two numbers" }
           },
           "scientific": {
-            "sine": {"description": "Calculate sine (degrees)"},
-            "cosine": {"description": "Calculate cosine (degrees)"},
-            "natural_log": {"description": "Calculate natural logarithm"},
-            "exponential": {"description": "Calculate e^x"}
+            "sine": { "description": "Calculate sine (degrees)" },
+            "cosine": { "description": "Calculate cosine (degrees)" },
+            "natural_log": { "description": "Calculate natural logarithm" },
+            "exponential": { "description": "Calculate e^x" }
           }
         }
       }
     }
   }
 }
-
