@@ -52,7 +52,15 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT_TELEMETRY_DISABLED: "true"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "exec 3<>/dev/tcp/localhost/6333; printf 'GET /health HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n' >&3; cat <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   redis:
     image: redis:7-alpine
