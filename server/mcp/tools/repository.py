@@ -1,15 +1,20 @@
 """
 MCP tools for repository management and status.
+
+These are fast, synchronous tools that don't require background tasks.
 """
 
 from celery.result import AsyncResult
+from fastmcp import FastMCP
 
 from server.application.services.repo_service import RepoService
 from server.infrastructure.execution import RepoExecutor
-from server.mcp.server import mcp
+
+# Sync tools need separate server without tasks enabled
+repository_server = FastMCP("Repository")
 
 
-@mcp.tool()
+@repository_server.tool()
 def get_task_status(task_id: str) -> dict:
     """
     Get status of any task by ID.
@@ -31,7 +36,7 @@ def get_task_status(task_id: str) -> dict:
     return status
 
 
-@mcp.tool()
+@repository_server.tool()
 def get_repo_status(repo_root: str) -> dict:
     """
     Get repository status and metadata.
@@ -46,7 +51,7 @@ def get_repo_status(repo_root: str) -> dict:
     return service.get_repo_status(repo_root)
 
 
-@mcp.tool()
+@repository_server.tool()
 def initialize_repo(repo_root: str, dir_name: str | None = None) -> dict:
     """
     Initialize compounding directory for a repository.

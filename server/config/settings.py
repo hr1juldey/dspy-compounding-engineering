@@ -31,8 +31,9 @@ class ServerSettings(BaseSettings):
     kb_max_retrieved: int = 25
     kb_similarity_threshold: float = 0.6
 
-    # Redis (Celery broker)
+    # Redis (Celery broker & FastMCP Docket)
     redis_url: str = "redis://localhost:6350"
+    fastmcp_docket_url: str = "redis://localhost:6350"  # Background task backend
 
     # Semantic Chunking
     use_semantic_chunking: bool = True

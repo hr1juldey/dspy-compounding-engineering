@@ -1,19 +1,15 @@
 """
 MCP tool definitions.
-Each tool delegates to application services.
+
+Legacy tools moved to subservers:
+- analysis → server/mcp/servers/analysis.py
+- execution → server/mcp/servers/execution.py
+- knowledge → server/mcp/servers/knowledge.py
+- system → server/mcp/servers/system.py
+
+Only repository tools remain here (fast, sync operations).
 """
 
-# Import all tool modules to register tools with MCP server
-import server.mcp.tools.analysis  # noqa: F401
-import server.mcp.tools.execution  # noqa: F401
-import server.mcp.tools.knowledge  # noqa: F401
-import server.mcp.tools.repository  # noqa: F401
-import server.mcp.tools.system  # noqa: F401
+from server.mcp.tools.repository import repository_server
 
-__all__ = [
-    "analysis",
-    "execution",
-    "knowledge",
-    "repository",
-    "system",
-]
+__all__ = ["repository_server"]
