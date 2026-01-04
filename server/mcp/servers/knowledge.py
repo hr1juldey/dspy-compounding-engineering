@@ -9,7 +9,7 @@ import asyncio
 from fastmcp import FastMCP
 
 from utils.knowledge import KnowledgeBase
-from utils.paths import CompoundingPaths
+from utils.paths import get_paths, reset_paths
 from workflows.codify import run_codify
 from workflows.garden import run_garden
 
@@ -33,7 +33,8 @@ async def index_codebase(
     Returns:
         Indexing result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         kb = KnowledgeBase()
@@ -69,7 +70,8 @@ async def garden_knowledge(
     Returns:
         Garden result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(run_garden, action=action, limit=limit)
@@ -97,7 +99,8 @@ async def codify_feedback(
     Returns:
         Codification result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(run_codify, feedback=feedback, source=source)
@@ -128,7 +131,8 @@ async def compress_knowledge_base(
     if not (0.0 <= ratio <= 1.0):
         return {"success": False, "error": "Ratio must be between 0.0 and 1.0"}
 
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         kb = KnowledgeBase()

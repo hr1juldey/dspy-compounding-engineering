@@ -35,8 +35,14 @@ def _save_stage_output(plans_dir: str, safe_name: str, stage: str, content: str)
 
 def run_plan(feature_description: str):
     """Orchestrate the planning process."""
-    plans_dir = "plans"
-    os.makedirs(plans_dir, exist_ok=True)
+    from server.config.lm_provider import ensure_dspy_configured
+    from utils.paths import get_paths
+
+    ensure_dspy_configured()
+
+    paths = get_paths()
+    plans_dir = str(paths.plans_dir)
+    paths.ensure_directories()
 
     safe_name = _get_safe_name(feature_description)
 
@@ -125,3 +131,10 @@ def run_plan(feature_description: str):
     console.print("\n[bold]Next Steps:[/bold]")
     console.print(f"1. Review plan: [cyan]cat {final_path}[/cyan]")
     console.print(f"2. Execute plan: [cyan]python cli.py work {final_path}[/cyan]")
+
+    # Return plan content and metadata for MCP client
+    return {
+        "plan_content": plan_content,
+        "plan_file": final_path,
+        "stage_dir": f"{plans_dir}/{safe_name}/",
+    }

@@ -23,6 +23,10 @@ def run_codify(feedback: str, source: str = "manual_input"):
         feedback: The raw text to codify.
         source: The source of the feedback (e.g., "manual", "review", "retro").
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     console.print(Panel(f"Codifying Feedback from {source}", style="bold blue"))
 
     kb = KnowledgeBase()

@@ -56,10 +56,14 @@ def validate_references(content: str, todos_dir: str) -> bool:
 
 
 def run_triage():  # noqa: C901
-    todos_dir = "todos"
-    if not os.path.exists(todos_dir):
-        console.print(f"[yellow]Directory '{todos_dir}' does not exist. Creating it...[/yellow]")
-        os.makedirs(todos_dir)
+    from server.config.lm_provider import ensure_dspy_configured
+    from utils.paths import get_paths
+
+    ensure_dspy_configured()
+
+    paths = get_paths()
+    todos_dir = str(paths.todos_dir)
+    paths.ensure_directories()
 
     consistency_check_todos(todos_dir)
     # Pattern: *-pending-*.md

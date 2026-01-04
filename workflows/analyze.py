@@ -167,8 +167,11 @@ def _display_dependency_report(result):
 
 def _save_analysis_result(analysis_type: str, entity: str, result: dict):
     """Save analysis result to file."""
-    analysis_dir = "analysis"
-    os.makedirs(analysis_dir, exist_ok=True)
+    from utils.paths import get_paths
+
+    paths = get_paths()
+    analysis_dir = str(paths.analysis_dir)
+    paths.ensure_directories()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_entity = "".join(c if c.isalnum() else "_" for c in entity)
@@ -199,6 +202,10 @@ def run_analyze(
         change_type: Change type for impact analysis
         save: Whether to save results to file
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     console.print(
         Panel.fit(
             f"[bold]GraphRAG Code Analysis[/bold]\nType: {analysis_type} | Entity: {entity}",

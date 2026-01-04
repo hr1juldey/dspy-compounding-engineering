@@ -75,6 +75,44 @@ def get_model_max_tokens(model_name: str, provider: str = "openai") -> int:
     return DEFAULT_MAX_TOKENS
 
 
+def is_dspy_configured() -> bool:
+    """
+    Check if DSPy is already configured in this process.
+
+    This checks global dspy.settings, which is readable by all threads.
+    Thread-safe for reading (no reconfiguration attempted).
+    """
+    try:
+        return hasattr(dspy.settings, "lm") and dspy.settings.lm is not None
+    except Exception:
+        return False
+
+
+def ensure_dspy_configured(env_file: str | None = None):
+    """
+    Ensure DSPy is configured in the current process.
+
+    Thread-safe: If called from worker thread, reads existing global config.
+    Process-safe: If called from new process, configures DSPy from env vars.
+
+    Args:
+        env_file: Optional path to .env file (defaults to auto-detection)
+    """
+    if is_dspy_configured():
+        return  # Already configured (either by this thread or another in same process)
+
+    # Not configured yet - must be a new process
+    worker_id = os.getpid()
+    if not os.getenv("COMPOUNDING_QUIET"):
+        logger.debug(f"Process {worker_id}: Configuring DSPy...")
+
+    # Call existing configure_dspy function
+    configure_dspy(env_file)
+
+    if not os.getenv("COMPOUNDING_QUIET"):
+        logger.debug(f"Process {worker_id}: DSPy configured successfully")
+
+
 def configure_dspy(env_file: str | None = None):
     """Configure DSPy with the appropriate LM provider and settings."""
     from server.config.env_loader import load_configuration

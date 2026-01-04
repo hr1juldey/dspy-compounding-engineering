@@ -467,9 +467,12 @@ def _display_todo_summary(created_todos: list[dict], counts: dict[str, int]) -> 
 
 def _create_review_todos(findings: list[dict]) -> None:
     """Create pending todo files for findings."""
+    from utils.paths import get_paths
+
     console.rule("Creating Todo Files")
-    todos_dir = "todos"
-    os.makedirs(todos_dir, exist_ok=True)
+    paths = get_paths()
+    todos_dir = str(paths.todos_dir)
+    paths.ensure_directories()
 
     created_todos = []
     counts = {"p1": 0, "p2": 0, "p3": 0}
@@ -513,6 +516,10 @@ def run_review(pr_url_or_id: str, project: bool = False, repo_root: str | Path |
         project: Review entire project instead of just changes
         repo_root: Root directory of target repository (defaults to current directory)
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     # Initialize RepoExecutor for target repo
     repo_root = Path(repo_root) if repo_root else Path.cwd()
     executor = RepoExecutor(repo_root)

@@ -8,7 +8,7 @@ import asyncio
 
 from fastmcp import FastMCP
 
-from utils.paths import CompoundingPaths
+from utils.paths import get_paths, reset_paths
 from workflows.analyze import run_analyze
 from workflows.plan import run_plan
 
@@ -27,6 +27,10 @@ async def analyze_code(
     """
     Analyze code using GraphRAG agents.
 
+    **Prerequisites:**
+        - Repository must be initialized via `initialize_repo()` tool first
+        - Use `get_repo_status()` to check initialization state
+
     Args:
         repo_root: Root directory of repository
         entity: Entity to analyze (function, class, module)
@@ -37,9 +41,14 @@ async def analyze_code(
 
     Returns:
         Analysis result dictionary
+
+    Note:
+        When working with multiple repositories, each requires separate initialization.
+        Collections are isolated per repository using stable path-based hashing.
     """
-    # Initialize paths for target repo
-    CompoundingPaths(repo_root)
+    # Initialize paths singleton for target repo
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         # Run sync workflow in thread pool
@@ -66,15 +75,24 @@ async def generate_plan(
     """
     Generate project implementation plan from feature description.
 
+    **Prerequisites:**
+        - Repository must be initialized via `initialize_repo()` tool first
+        - Use `get_repo_status()` to check initialization state
+
     Args:
         repo_root: Root directory of repository
         feature_description: Natural language feature description
 
     Returns:
         Plan result with implementation steps
+
+    Note:
+        When working with multiple repositories, each requires separate initialization.
+        Collections are isolated per repository using stable path-based hashing.
     """
-    # Initialize paths for target repo
-    CompoundingPaths(repo_root)
+    # Initialize paths singleton for target repo
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(

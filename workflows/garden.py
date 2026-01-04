@@ -154,6 +154,10 @@ def run_garden(action: str = "consolidate", limit: int = 100):
         action: Action to perform (consolidate|compress-memory|index-commits|all)
         limit: Maximum commits to index (for index-commits action)
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     console.print(
         Panel.fit(
             f"[bold]Knowledge Base Maintenance[/bold]\nAction: {action}",

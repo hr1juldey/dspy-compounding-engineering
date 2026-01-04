@@ -1,11 +1,37 @@
 """Calculator MCP server for testing MCP functionality."""
 
+import sys
+from contextlib import asynccontextmanager
+
 from fastmcp import FastMCP
 
 import calculator
 
-# Initialize MCP server
-mcp = FastMCP("Calculator")
+
+@asynccontextmanager
+async def calculator_lifespan(mcp: FastMCP):
+    """
+    Calculator MCP lifespan: startup and shutdown logic.
+
+    Startup:
+    - Initialize calculator engine
+    - Log ready status
+
+    Shutdown:
+    - Clean up resources gracefully
+    """
+    # Startup
+    print("Initializing Calculator MCP...", file=sys.stderr)
+    print("✓ Calculator MCP ready", file=sys.stderr)
+
+    yield
+
+    # Shutdown
+    print("Shutting down Calculator MCP...", file=sys.stderr)
+
+
+# Initialize MCP server with lifecycle management
+mcp = FastMCP("Calculator", lifespan=calculator_lifespan)
 
 
 # Arithmetic Tools
@@ -128,15 +154,19 @@ def get_e() -> float:
 
 
 if __name__ == "__main__":
-    import sys
-
     # Support both stdio and http transports
     transport = sys.argv[1] if len(sys.argv) > 1 else "stdio"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 12003
 
-    if transport in ("http", "streamable-http"):
-        print(f"Starting Calculator MCP on HTTP :{port}", file=__import__("sys").stderr)
-        mcp.run(transport=transport, host="0.0.0.0", port=port)
-    else:
-        print("Starting Calculator MCP on stdio", file=__import__("sys").stderr)
-        mcp.run()
+    try:
+        if transport in ("http", "streamable-http"):
+            print(f"Starting Calculator MCP on HTTP :{port}", file=sys.stderr)
+            mcp.run(transport=transport, host="0.0.0.0", port=port)
+        else:
+            print("Starting Calculator MCP on stdio", file=sys.stderr)
+            mcp.run()
+    except KeyboardInterrupt:
+        print("\nCalculator MCP interrupted by user", file=sys.stderr)
+    except Exception as e:
+        print(f"Calculator MCP error: {e}", file=sys.stderr)
+        sys.exit(1)

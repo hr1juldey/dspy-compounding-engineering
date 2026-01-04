@@ -9,7 +9,7 @@ import os
 
 from fastmcp import FastMCP
 
-from utils.paths import CompoundingPaths
+from utils.paths import get_paths, reset_paths
 from workflows.generate_command import run_generate_command
 from workflows.triage import run_triage
 
@@ -33,7 +33,8 @@ async def triage_issues(
     Returns:
         Triage result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(run_triage, pattern=pattern, dry_run=dry_run)
@@ -61,7 +62,8 @@ async def generate_command(
     Returns:
         Command generation result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(

@@ -20,8 +20,10 @@ class ResearchInsight(BaseModel):
 class BaseResearchReport(BaseModel):
     """Base class for all research reports to ensure field consistency."""
 
-    summary: str = Field(..., description="High-level assessment summary")
-    analysis: str = Field(..., description="Detailed synthesis and technical implications")
+    summary: Optional[str] = Field(default="", description="High-level assessment summary")
+    analysis: Optional[str] = Field(
+        default="", description="Detailed synthesis and technical implications"
+    )
     insights: List[ResearchInsight] = Field(
         default_factory=list, description="Categorized research discoveries"
     )

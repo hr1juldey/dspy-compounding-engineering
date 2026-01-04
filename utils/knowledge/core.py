@@ -147,6 +147,19 @@ class KnowledgeBase(CollectionManagerMixin):
             self.graphrag_indexer.index_codebase(root_dir, force_recreate=force_recreate)
         return stats
 
+    def search_codebase(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        """
+        Search codebase using semantic/vector search.
+
+        Args:
+            query: Search query string
+            limit: Maximum number of results to return
+
+        Returns:
+            List of search results with path, content, score, etc.
+        """
+        return self.codebase_indexer.search_codebase(query, limit)
+
     def compress_ai_md(self, ratio: float = 0.3, dry_run: bool = False):
         """Compress AI knowledge base markdown."""
         return self.docs_service.compress_ai_md(ratio=ratio, dry_run=dry_run)

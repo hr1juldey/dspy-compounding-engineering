@@ -48,6 +48,10 @@ def run_unified_work(
     """
     Unified work command using DSPy ReAct for todo resolution and plan execution.
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     input_type = _detect_input_type(pattern)
 
     mode = "in-place" if in_place else "worktree"

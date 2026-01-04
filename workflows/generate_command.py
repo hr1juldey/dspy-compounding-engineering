@@ -94,6 +94,10 @@ def run_generate_command(description: str, dry_run: bool = False):  # noqa: C901
         description: Natural language description of what the command should do
         dry_run: If True, show what would be created without writing files
     """
+    from server.config.lm_provider import ensure_dspy_configured
+
+    ensure_dspy_configured()
+
     console.print(
         Panel.fit(
             "[bold]Compounding Engineering: Generate Command[/bold]\n"

@@ -10,6 +10,8 @@ Exposes CLI functionality via stdio transport with:
 
 import asyncio
 import os
+import sys
+from contextlib import asynccontextmanager
 
 from fastmcp import FastMCP
 
@@ -20,12 +22,74 @@ from server.mcp.sampling_handler import sampling_handler
 settings = get_settings()
 os.environ.setdefault("FASTMCP_DOCKET_URL", settings.fastmcp_docket_url)
 
-# Initialize FastMCP server with background task support and sampling fallback
+
+@asynccontextmanager
+async def mcp_lifespan(mcp: FastMCP):
+    """
+    MCP server lifespan: startup and shutdown logic.
+
+    Startup:
+    - Configure logging
+    - Configure DSPy (LM and settings)
+    - Optionally run warmup (controlled by MCP_WARMUP_ENABLED)
+
+    Shutdown:
+    - Clean up resources if needed
+    """
+    from server.config import configure_dspy
+    from server.config.logging import configure_logging
+
+    # Startup
+    print("Initializing MCP server...", file=sys.stderr)
+
+    # Step 1: Configure logging
+    configure_logging(level="INFO")
+
+    # Step 2: Configure DSPy (REQUIRED - fast, ~1-2s)
+    print("Configuring DSPy LM...", file=sys.stderr)
+    try:
+        configure_dspy()
+        print("✓ DSPy LM configured", file=sys.stderr)
+    except Exception as e:
+        print(f"✗ Failed to configure DSPy: {e}", file=sys.stderr)
+        print("Warning: Tools requiring LLM will fail", file=sys.stderr)
+
+    # Step 3: Warmup (SLOW, 60-120s for Ollama)
+    # Default: true for HTTP (long-lived), set to false for fast development restarts
+    warmup_enabled = os.getenv("MCP_WARMUP_ENABLED", "true").lower() not in ("false", "0", "no")
+    if warmup_enabled:
+        print(
+            "Starting warmup (may take 60-120s for Ollama model loading)...",
+            file=sys.stderr,
+        )
+        try:
+            from utils.knowledge.utils.warmup import WarmupTest
+
+            warmup = WarmupTest()
+            await asyncio.to_thread(warmup.run_all)
+            print("✓ Warmup complete - LLM and embedder ready", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: Warmup failed: {e}", file=sys.stderr)
+            print("Tools will still work but first call may be slow", file=sys.stderr)
+    else:
+        print("Warmup disabled (set MCP_WARMUP_ENABLED=true to enable)", file=sys.stderr)
+        print("Note: First tool call may take 60-120s for model loading", file=sys.stderr)
+
+    print("MCP server ready", file=sys.stderr)
+
+    yield
+
+    # Shutdown
+    print("Shutting down MCP server...", file=sys.stderr)
+
+
+# Initialize FastMCP server with background task support, sampling fallback, and lifespan
 mcp = FastMCP(
     "Compounding Engineering MCP Server",
     tasks=True,
     sampling_handler=sampling_handler,
     sampling_handler_behavior="fallback",  # Use DSPy when client lacks sampling
+    lifespan=mcp_lifespan,
 )
 
 # Import subservers for composition

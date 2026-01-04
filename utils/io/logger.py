@@ -191,10 +191,10 @@ class SystemLogger:
         SystemLogger._log_to_all("info", msg, to_cli=to_cli, prefix="ℹ")
 
     @staticmethod
-    def debug(msg: str):
+    def debug(msg: str, exc_info: bool = False):
         """Debug log - writes to FILE ONLY. clean CLI."""
-        # Debug messages go to file via _log_to_all but with to_cli=False
-        SystemLogger._log_to_all("debug", msg, to_cli=False)
+        scrubbed_msg = scrubber.scrub(msg)
+        loguru_logger.opt(depth=2, exception=exc_info).log("DEBUG", scrubbed_msg)
 
     @staticmethod
     def success(msg: str):

@@ -9,7 +9,7 @@ import asyncio
 from fastmcp import FastMCP
 
 from server.application.services.check_service import CheckService
-from utils.paths import CompoundingPaths
+from utils.paths import get_paths, reset_paths
 from workflows.review import run_review
 from workflows.work import run_unified_work
 
@@ -37,7 +37,8 @@ async def execute_work(
     Returns:
         Work execution result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(
@@ -72,7 +73,8 @@ async def review_code(
     Returns:
         Review result dictionary
     """
-    CompoundingPaths(repo_root)
+    reset_paths()
+    get_paths(repo_root)
 
     try:
         result = await asyncio.to_thread(run_review, pr_url_or_id=pr_url_or_id, project=project)

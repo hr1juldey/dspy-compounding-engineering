@@ -46,5 +46,9 @@ def get_project_root() -> Path:
 
 def get_project_hash() -> str:
     """Generate a stable hash for the current project based on its root path."""
-    root_path = str(get_project_root().absolute())
+    from utils.paths import get_paths
+
+    # Use the configured repo_root from CompoundingPaths singleton
+    # This respects the target repository set by CompoundingPaths(repo_root)
+    root_path = str(get_paths().repo_root.absolute())
     return hashlib.sha256(root_path.encode()).hexdigest()[:16]
