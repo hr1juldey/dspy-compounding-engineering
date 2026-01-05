@@ -145,10 +145,16 @@ class KnowledgeBase(CollectionManagerMixin):
         return text[:30000]
 
     def index_codebase(
-        self, root_dir: str, force_recreate: bool = False, with_graphrag: bool = False
+        self,
+        root_dir: str,
+        force_recreate: bool = False,
+        with_graphrag: bool = False,
+        progress_callback=None,  # type: ignore[type-arg]
     ):
         """Index codebase for semantic search."""
-        stats = self.codebase_indexer.index_codebase(root_dir, force_recreate=force_recreate)
+        stats = self.codebase_indexer.index_codebase(
+            root_dir, force_recreate=force_recreate, progress_callback=progress_callback
+        )
         if with_graphrag:
             self.graphrag_indexer.index_codebase(root_dir, force_recreate=force_recreate)
         return stats

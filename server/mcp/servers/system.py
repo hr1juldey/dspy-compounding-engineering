@@ -42,7 +42,7 @@ async def triage_issues(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Triaging issues...")
+            await ctx.report_progress(progress=0, total=1, message="Starting issue triage...")
 
         # Create a wrapper that ignores pattern/dry_run (not yet integrated into run_triage)
         triage_runner = partial(lambda: run_triage())
@@ -50,6 +50,9 @@ async def triage_issues(
             asyncio.to_thread(triage_runner),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Triage complete")
 
         return {"success": True, "result": result, "pattern": pattern, "dry_run": dry_run}
 
@@ -87,12 +90,15 @@ async def generate_command(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Generating command...")
+            await ctx.report_progress(progress=0, total=1, message="Generating CLI command...")
 
         result = await asyncio.wait_for(
             asyncio.to_thread(run_generate_command, description=description, dry_run=dry_run),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Command generation complete")
 
         return {"success": True, "result": result, "description": description, "dry_run": dry_run}
 

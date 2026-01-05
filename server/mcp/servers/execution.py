@@ -44,8 +44,11 @@ async def execute_work(
     get_paths(repo_root)
 
     try:
+        mode = "parallel" if parallel else "sequential"
         if ctx:
-            await ctx.report_progress(progress=2, total=3, message="Executing work...")
+            await ctx.report_progress(
+                progress=0, total=1, message=f"Starting work execution ({mode} mode)..."
+            )
 
         result = await asyncio.wait_for(
             asyncio.to_thread(
@@ -58,6 +61,9 @@ async def execute_work(
             ),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Work execution complete")
 
         return {"success": True, "result": result, "pattern": pattern}
 
@@ -94,13 +100,19 @@ async def review_code(
     get_paths(repo_root)
 
     try:
+        scope = "project" if project else "PR/branch"
         if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Reviewing code...")
+            await ctx.report_progress(
+                progress=0, total=1, message=f"Starting code review ({scope})..."
+            )
 
         result = await asyncio.wait_for(
             asyncio.to_thread(run_review, pr_url_or_id=pr_url_or_id, project=project),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Code review complete")
 
         return {"success": True, "result": result, "target": pr_url_or_id}
 

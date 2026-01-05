@@ -54,7 +54,9 @@ async def analyze_code(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=3, message="Analyzing code...")
+            await ctx.report_progress(
+                progress=0, total=1, message=f"Analyzing {entity} ({analysis_type})..."
+            )
 
         # Run sync workflow in thread pool with timeout
         result = await asyncio.wait_for(
@@ -68,6 +70,9 @@ async def analyze_code(
             ),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Analysis complete")
 
         return {"success": True, "result": result, "entity": entity, "type": analysis_type}
 
@@ -111,10 +116,9 @@ async def generate_plan(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=4, message="Researching...")
-
-        if ctx:
-            await ctx.report_progress(progress=3, total=4, message="Generating plan...")
+            await ctx.report_progress(
+                progress=0, total=1, message="Generating implementation plan..."
+            )
 
         result = await asyncio.wait_for(
             asyncio.to_thread(
@@ -123,6 +127,9 @@ async def generate_plan(
             ),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Plan generation complete")
 
         return {"success": True, "plan": result, "feature": feature_description}
 

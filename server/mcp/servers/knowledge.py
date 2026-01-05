@@ -40,18 +40,31 @@ async def index_codebase(
     get_paths(repo_root)
 
     try:
-        if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Indexing codebase...")
+        loop = asyncio.get_event_loop()
+
+        def progress_callback(filepath: str, processed: int, total: int):
+            """Stream indexing progress via MCP (thread-safe)."""
+            if ctx:
+                # Use run_coroutine_threadsafe to call async from worker thread
+                asyncio.run_coroutine_threadsafe(
+                    ctx.report_progress(
+                        progress=processed,
+                        total=total,
+                        message=f"Indexed {processed}/{total}: {filepath}",
+                    ),
+                    loop,
+                )
 
         kb = KnowledgeBase()
 
-        # Run indexing in thread pool (sync operation) with timeout
+        # Run indexing in thread pool with live progress streaming
         result = await asyncio.wait_for(
             asyncio.to_thread(
                 kb.index_codebase,
                 root_dir=repo_root,
                 force_recreate=recreate,
                 with_graphrag=with_graphrag,
+                progress_callback=progress_callback,
             ),
             timeout=600,  # 10 minutes
         )
@@ -69,7 +82,7 @@ async def index_codebase(
 
 
 @knowledge_server.tool(task=True)  # SLOW: background if client supports (optional mode)
-@track_tool_execution(total_stages=2)
+@track_tool_execution(total_stages=3)
 async def garden_knowledge(
     repo_root: str,
     action: str = "consolidate",
@@ -92,12 +105,18 @@ async def garden_knowledge(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Gardening knowledge...")
+            await ctx.report_progress(
+                progress=0, total=1, message="Starting knowledge gardening..."
+            )
 
+        # Run gardening (stage progress happens inside)
         result = await asyncio.wait_for(
             asyncio.to_thread(run_garden, action=action, limit=limit),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message=f"Gardening complete: {action}")
 
         return {"success": True, "result": result, "action": action}
 
@@ -112,7 +131,7 @@ async def garden_knowledge(
 
 
 @knowledge_server.tool(task=True)  # SLOW: background if client supports (optional mode)
-@track_tool_execution(total_stages=1)
+@track_tool_execution(total_stages=3)
 async def codify_feedback(
     repo_root: str,
     feedback: str,
@@ -134,10 +153,16 @@ async def codify_feedback(
     get_paths(repo_root)
 
     try:
+        if ctx:
+            await ctx.report_progress(progress=0, total=1, message="Starting codification...")
+
         result = await asyncio.wait_for(
             asyncio.to_thread(run_codify, feedback=feedback, source=source),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Codification complete")
 
         return {"success": True, "result": result, "feedback": feedback, "source": source}
 
@@ -152,7 +177,7 @@ async def codify_feedback(
 
 
 @knowledge_server.tool(task=True)  # SLOW: background if client supports (optional mode)
-@track_tool_execution(total_stages=2)
+@track_tool_execution(total_stages=3)
 async def compress_knowledge_base(
     repo_root: str,
     ratio: float = 0.5,
@@ -180,7 +205,7 @@ async def compress_knowledge_base(
 
     try:
         if ctx:
-            await ctx.report_progress(progress=2, total=2, message="Compressing knowledge...")
+            await ctx.report_progress(progress=0, total=1, message="Starting compression...")
 
         kb = KnowledgeBase()
 
@@ -188,6 +213,9 @@ async def compress_knowledge_base(
             asyncio.to_thread(kb.compress_ai_md, ratio=ratio, dry_run=dry_run),
             timeout=600,  # 10 minutes
         )
+
+        if ctx:
+            await ctx.report_progress(progress=1, total=1, message="Compression complete")
 
         return {"success": True, "result": result, "ratio": ratio, "dry_run": dry_run}
 
