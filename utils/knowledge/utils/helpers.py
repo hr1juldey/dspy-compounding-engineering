@@ -90,7 +90,7 @@ class CollectionManagerMixin:
                 existing_size = vectors_config[""].size
             elif len(vectors_config) == 1:
                 existing_size = list(vectors_config.values())[0].size
-        elif hasattr(vectors_config, "size"):
+        elif vectors_config and hasattr(vectors_config, "size"):
             existing_size = vectors_config.size
 
         if force_recreate:
@@ -114,7 +114,7 @@ class CollectionManagerMixin:
         collection_name: str,
         vector_size: int,
         enable_sparse: bool,
-        model_name: str = None,
+        model_name: str | None = None,
     ):
         """Create a new collection with specified config."""
         try:
@@ -123,7 +123,7 @@ class CollectionManagerMixin:
                 "vectors_config": VectorParams(size=vector_size, distance=Distance.COSINE),
             }
             if enable_sparse:
-                params["sparse_vectors_config"] = {
+                params["sparse_vectors_config"] = {  # type: ignore[typeddict-item]
                     "text-sparse": SparseVectorParams(index=SparseIndexParams(on_disk=False))
                 }
 

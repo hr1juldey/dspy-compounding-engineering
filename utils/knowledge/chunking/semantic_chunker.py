@@ -8,6 +8,9 @@ Architecture:
 """
 
 import os
+from typing import cast
+
+import dspy
 
 from utils.io.logger import logger
 from utils.knowledge.chunking.json_extractor import JSONExtractor
@@ -143,7 +146,7 @@ class SemanticChunker:
             logger.debug(f"Stack trace: {e}", exc_info=True)
             return self._fallback_chunking(code)
 
-    def _ast_chunking_strategy(self, code: str, structure: CodeStructure) -> ChunkingStrategy:
+    def _ast_chunking_strategy(self, code: str, structure: CodeStructure) -> ChunkingStrategy:  # noqa: C901
         """
         AST creates deterministic chunking strategy (NO LLM calls).
 
@@ -269,11 +272,14 @@ class SemanticChunker:
         Uses CoT + ReAct to generate better chunking strategy.
         """
         # Use ChainOfThought to generate new strategy from scratch
-        result = self.strategy_generator(
-            code=code,
-            ast_structure=structure,
-            target_chunk_size=self.target_size,
-            min_overlap=self.min_overlap,
+        result = cast(
+            dspy.Prediction,
+            self.strategy_generator(
+                code=code,
+                ast_structure=structure,
+                target_chunk_size=self.target_size,
+                min_overlap=self.min_overlap,
+            ),
         )
 
         return result.chunking_strategy

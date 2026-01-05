@@ -7,7 +7,7 @@ Single Responsibility: Analyze dependencies between todos.
 from typing import List
 
 
-def analyze_dependencies(todos: List[dict]) -> dict:
+def analyze_dependencies(todos: List[dict]) -> dict:  # noqa: C901
     """
     Analyze dependencies between todos and create execution plan.
 

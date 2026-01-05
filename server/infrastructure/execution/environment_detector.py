@@ -29,13 +29,13 @@ class EnvironmentDetector:
                 python_envs.append(PythonEnvironment(self.repo_root, venv_name))
         return python_envs
 
-    def get_environment(self) -> RepoEnvironment:
+    def get_environment(self) -> RepoEnvironment:  # noqa: C901
         """Detect and return repository environment."""
         environments = []
 
         python_envs = self._detect_python()
         if len(python_envs) > 1:
-            selected = self.user_prompter.choose_environment(python_envs)
+            selected = self.user_prompter.choose_environment(python_envs)  # type: ignore[arg-type]
             environments.append(selected)
         elif python_envs:
             environments.extend(python_envs)

@@ -3,7 +3,9 @@
 import json
 import os
 from datetime import datetime
+from typing import cast
 
+import dspy
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -185,7 +187,7 @@ def _save_analysis_result(analysis_type: str, entity: str, result: dict):
     return filepath
 
 
-def run_analyze(
+def run_analyze(  # noqa: C901
     entity: str,
     analysis_type: str = "navigate",
     max_depth: int = 2,
@@ -255,7 +257,7 @@ def run_analyze(
 
             with console.status("[cyan]Tracing dependencies..."):
                 agent = DependencyTracerModule()
-                result = agent(source_entity=source, target_entity=target)
+                result = cast(dspy.Prediction, agent(source_entity=source, target_entity=target))
 
             _display_dependency_report(result)
 
@@ -272,7 +274,10 @@ def run_analyze(
 
             with console.status("[cyan]Searching multi-hop path..."):
                 agent = MultiHopSearcher()
-                result = agent(start_query=start, target_query=target, max_hops=max_depth)
+                result = cast(
+                    dspy.Prediction,
+                    agent(start_query=start, target_query=target, max_hops=max_depth),
+                )
 
             if result.found:
                 console.print(f"\n[green]✓ Path found ({result.hops} hops)![/green]")

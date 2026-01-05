@@ -2,8 +2,16 @@
 
 import os
 import uuid
+from typing import cast
 
-from qdrant_client.models import FieldCondition, Filter, MatchValue, PointStruct
+from qdrant_client.models import (
+    Condition,
+    FieldCondition,
+    Filter,
+    MatchValue,
+    PointStruct,
+    Range,
+)
 
 
 class FileIndexer:
@@ -61,10 +69,13 @@ class FileIndexer:
             self.client.delete(
                 collection_name=self.collection_name,
                 points_selector=Filter(
-                    must=[
-                        FieldCondition(key="path", match=MatchValue(value=filepath)),
-                        FieldCondition(key="chunk_index", range={"gte": len(chunks)}),
-                    ]
+                    must=cast(
+                        list[Condition],
+                        [
+                            FieldCondition(key="path", match=MatchValue(value=filepath)),
+                            FieldCondition(key="chunk_index", range=Range(gte=len(chunks))),
+                        ],
+                    )
                 ),
             )
             return True

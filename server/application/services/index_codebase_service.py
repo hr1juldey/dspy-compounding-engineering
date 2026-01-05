@@ -31,7 +31,7 @@ class IndexCodebaseService:
         Returns:
             Task ID for async tracking
         """
-        result = index_codebase_task.delay(
+        result = index_codebase_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root, recreate=recreate, with_graphrag=with_graphrag
         )
         return result.id

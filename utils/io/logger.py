@@ -28,8 +28,8 @@ class InterceptHandler(logging.Handler):
         # Find caller from where the logged message originated
         # We look back 2 levels (emit -> logging -> caller)
         frame, depth = logging.currentframe(), 2
-        while frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
+        while frame and frame.f_code.co_filename == logging.__file__:  # type: ignore[union-attr]
+            frame = frame.f_back  # type: ignore[union-attr]
             depth += 1
 
         # Apply scrubbing to the message before it reaches Loguru

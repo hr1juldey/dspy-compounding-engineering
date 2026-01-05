@@ -13,7 +13,7 @@ class ClassMethodExtractor:
         """Extract all class and method entities from AST."""
         entities = []
 
-        for node in tree.body:
+        for node in tree.body:  # type: ignore[attr-defined]  # type: ignore[attr-defined]
             if isinstance(node, ast.ClassDef):
                 class_id = generate_entity_id(filepath, f"CLASS_{node.name}", node.lineno)
 

@@ -8,7 +8,7 @@ Stores entities as Qdrant points with:
 """
 
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -40,7 +40,7 @@ class GraphStore(CollectionManagerMixin):
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
+        qdrant_client: Optional[QdrantClient],
         embedding_provider: EmbeddingProvider,
         collection_name: str,
     ):
@@ -59,7 +59,7 @@ class GraphStore(CollectionManagerMixin):
                 "(e.g., 'entities_abc123')"
             )
 
-        self.client = qdrant_client
+        self.client = qdrant_client  # type: ignore[assignment]
         self.embedding_provider = embedding_provider
         self.collection_name = collection_name
         self.vector_db_available = self.client is not None
@@ -391,7 +391,7 @@ class GraphStore(CollectionManagerMixin):
             entity_ids = [uuid.UUID(int=int(e.id, 16)).hex for e in existing]
             self.client.delete(
                 collection_name=self.collection_name,
-                points_selector=entity_ids,
+                points_selector=entity_ids,  # type: ignore[arg-type]
             )
 
             logger.info(f"Deleted {len(entity_ids)} entities from {file_path}")

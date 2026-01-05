@@ -5,6 +5,8 @@ Multi-step ReAct orchestrator following workflow/plan.py pattern.
 Chains 4 signatures together with KBPredict for context injection.
 """
 
+from typing import cast
+
 import dspy
 
 from agents.knowledge_gardener.commit_indexer import CommitIndexerSignature
@@ -46,7 +48,7 @@ class KnowledgeGardenerOrchestrator(dspy.Module):
         current_knowledge_json: str,
         agent_memories_json: str = "{}",
         recent_commits_json: str = "[]",
-    ):
+    ) -> KnowledgeGardenerResult:
         """
         Multi-step orchestration (following workflow/plan.py pattern).
 
@@ -58,18 +60,27 @@ class KnowledgeGardenerOrchestrator(dspy.Module):
         """
 
         # Step 1: Consolidate KB learnings
-        kb_result = self.consolidator(current_knowledge_json=current_knowledge_json)
+        kb_result = cast(
+            dspy.Prediction, self.consolidator(current_knowledge_json=current_knowledge_json)
+        )
 
         # Step 2: Extract patterns from consolidated KB
-        pattern_result = self.pattern_extractor(
-            consolidated_knowledge_json=kb_result.consolidated_knowledge_json
+        pattern_result = cast(
+            dspy.Prediction,
+            self.pattern_extractor(
+                consolidated_knowledge_json=kb_result.consolidated_knowledge_json
+            ),
         )
 
         # Step 3: Compress memories (independent of KB consolidation)
-        memory_result = self.memory_compressor(agent_memories_json=agent_memories_json)
+        memory_result = cast(
+            dspy.Prediction, self.memory_compressor(agent_memories_json=agent_memories_json)
+        )
 
         # Step 4: Index commits (independent of KB consolidation)
-        commit_result = self.commit_indexer(recent_commits_json=recent_commits_json)
+        commit_result = cast(
+            dspy.Prediction, self.commit_indexer(recent_commits_json=recent_commits_json)
+        )
 
         # Step 5: Combine all results
         return KnowledgeGardenerResult(

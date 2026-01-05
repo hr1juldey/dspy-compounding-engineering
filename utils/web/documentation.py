@@ -63,7 +63,7 @@ class DocumentationFetcher:
         try:
             # socket.getaddrinfo handles both v4 and v6
             addr_info = socket.getaddrinfo(hostname, None)
-            return list({info[4][0] for info in addr_info}) if addr_info else []
+            return list({info[4][0] for info in addr_info}) if addr_info else []  # type: ignore[arg-type]
         except socket.gaierror:
             return []
 
@@ -175,13 +175,14 @@ class DocumentationFetcher:
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
-            safe_ip = self._get_safe_ip(hostname)
+
+            if not hostname:
+                return f"Error: URL {url} has no valid hostname"
+
+            safe_ip, error_msg = self._get_safe_ip(hostname)
 
             if not safe_ip:
-                return (
-                    f"Error: URL {url} resolved to an unsafe or unresolvable address. "
-                    "Blocked for security reasons."
-                )
+                return f"Error: {error_msg or 'URL resolved to an unsafe or unresolvable address'}"
 
             # Use PinnedTransport to prevent DNS rebinding attacks
             transport = PinnedTransport(hostname, safe_ip)

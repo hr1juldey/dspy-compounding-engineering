@@ -22,7 +22,7 @@ class GardenService:
         Returns:
             Task ID for tracking
         """
-        task = garden_task.delay(repo_root=repo_root, action=action, limit=limit)
+        task = garden_task.delay(repo_root=repo_root, action=action, limit=limit)  # type: ignore[no-untyped-call]
         return task.id
 
     def get_result(self, task_id: str) -> dict | None:

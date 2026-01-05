@@ -50,6 +50,7 @@ dependencies = [
     "dspy-qdrant>=0.1.4",
     "sqlmodel>=0.0.31",
     "networkx[default]>=3.6.1",
+    "types-networkx==3.6.1.20251220",
     "mem0ai>=1.0.1",
     "fastapi[standard]>=0.128.0",
     "pydocket>=0.16.3",
@@ -107,7 +108,7 @@ select = [
 ]
 ignore = [
    ## "TID252", # ❌ TEMPORARY — see next section
-   "C901",
+   ## "C901",
 ]
 
 [tool.ruff.lint.isort]

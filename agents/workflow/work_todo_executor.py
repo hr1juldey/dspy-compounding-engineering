@@ -1,3 +1,5 @@
+from typing import cast
+
 import dspy
 
 from utils.agent.tools import get_todo_resolver_tools
@@ -80,7 +82,11 @@ class ReActTodoResolver(dspy.Module):
         from utils.knowledge import KBPredict
 
         self.tools = get_todo_resolver_tools(base_dir)
-        react = dspy.ReAct(signature=TodoResolutionSignature, tools=self.tools, max_iters=15)
+        react = dspy.ReAct(
+            signature=TodoResolutionSignature,
+            tools=cast(list, self.tools),
+            max_iters=15,
+        )
         self.predictor = KBPredict.wrap(
             react,
             kb_tags=["work", "work-resolutions", "code-review", "triage-decisions"],

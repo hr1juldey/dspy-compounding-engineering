@@ -82,7 +82,7 @@ class DependencyTracerModule(dspy.Module):
         super().__init__()
 
         # Initialize graph store + GraphRAG
-        qdrant = registry.get_qdrant_client()
+        qdrant = registry.get_qdrant_client_required()
         project_hash = get_project_hash()
         graph_store = GraphStore(qdrant, EmbeddingProvider(), f"entities_{project_hash}")
         self.graph_rag = CodeGraphRAG(graph_store)
@@ -176,10 +176,19 @@ class DependencyTracerModule(dspy.Module):
 
         try:
             # Find simple cycles starting from source
-            for cycle in nx.simple_cycles(self.graph_rag.graph, length_bound=10):
+            for cycle in nx.simple_cycles(self.graph_rag.graph):  # type: ignore[attr-defined]
+                if len(cycle) > 10:  # Skip long cycles
+                    continue
                 if source.id in cycle:
-                    cycle_names = [self.graph_rag.graph_store.get_entity(eid).name for eid in cycle]
-                    cycles.append(CycleInfo(cycle_path=cycle_names, cycle_type="Dependency"))
+                    # Build cycle names with null check
+                    cycle_names = []
+                    for eid in cycle:
+                        entity = self.graph_rag.graph_store.get_entity(eid)
+                        if entity:
+                            cycle_names.append(entity.name)
+
+                    if cycle_names:
+                        cycles.append(CycleInfo(cycle_path=cycle_names, cycle_type="Dependency"))
 
                     if len(cycles) >= 5:  # Limit to 5 cycles
                         break

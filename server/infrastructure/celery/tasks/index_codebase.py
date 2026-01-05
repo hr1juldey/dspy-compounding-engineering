@@ -55,7 +55,7 @@ def index_codebase_task(
             root_dir=repo_root,
             force_recreate=recreate,
             with_graphrag=with_graphrag,
-            progress_callback=progress_callback if with_graphrag else None,
+            progress_callback=progress_callback if with_graphrag else None,  # type: ignore[unexpected-keyword]
         )
 
         publish_progress(self.request.id, 100, "Codebase indexing complete")

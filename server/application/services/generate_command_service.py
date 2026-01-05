@@ -27,7 +27,7 @@ class GenerateCommandService:
         Returns:
             Task ID for async tracking
         """
-        result = generate_command_task.delay(
+        result = generate_command_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root, description=description, dry_run=dry_run
         )
         return result.id

@@ -21,7 +21,7 @@ class PlanService:
         Returns:
             Task ID for tracking
         """
-        task = generate_plan_task.delay(
+        task = generate_plan_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root, feature_description=feature_description
         )
         return task.id

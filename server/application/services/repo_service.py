@@ -90,11 +90,11 @@ class RepoService:
             # Get knowledge base stats
             try:
                 kb = KnowledgeBase()
-                status["knowledge_base"] = {
+                status["knowledge_base"] = {  # type: ignore[typeddict-item]
                     "available": True,
-                    "entries": kb.get_entry_count() if hasattr(kb, "get_entry_count") else 0,
+                    "entries": getattr(kb, "get_entry_count", lambda: 0)(),
                 }
             except Exception as e:
-                status["knowledge_base"] = {"available": False, "error": str(e)}
+                status["knowledge_base"] = {"available": False, "error": str(e)}  # type: ignore[typeddict-item]
 
         return status

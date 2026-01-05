@@ -24,7 +24,7 @@ class TokenCounter:
         if default_model not in _TOKEN_CACHE:
             _TOKEN_CACHE[default_model] = {}
 
-    def count_tokens(self, text: str, model: str = None) -> int:
+    def count_tokens(self, text: str, model: str | None = None) -> int:
         """
         Count tokens in text string.
         """

@@ -2,7 +2,9 @@
 
 import json
 import os
+from typing import cast
 
+import dspy
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
@@ -75,10 +77,13 @@ def _consolidate_knowledge(kb: KnowledgeBase):
     with console.status("[cyan]Running Knowledge Gardener..."):
         orchestrator = KnowledgeGardenerOrchestrator()
 
-        result = orchestrator(
-            current_knowledge_json=json.dumps(current_entries, indent=2),
-            agent_memories_json="[]",  # Will be filled by compress-memory action
-            recent_commits_json="[]",  # Will be filled by index-commits action
+        result = cast(
+            dspy.Prediction,
+            orchestrator(
+                current_knowledge_json=json.dumps(current_entries, indent=2),
+                agent_memories_json="[]",  # Will be filled by compress-memory action
+                recent_commits_json="[]",  # Will be filled by index-commits action
+            ),
         )
 
     # Display results

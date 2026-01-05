@@ -15,7 +15,7 @@ class SimplicityFinding(ReviewFinding):
 class SimplicityReport(ReviewReport):
     core_purpose: str = Field(..., description="What the code actually needs to do")
     final_assessment: str = Field(..., description="Complexity score and recommended action")
-    findings: List[SimplicityFinding] = Field(default_factory=list)
+    findings: List[SimplicityFinding] = Field(default_factory=list)  # type: ignore[override]
 
 
 class CodeSimplicityReviewer(dspy.Signature):

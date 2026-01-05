@@ -3,8 +3,10 @@
 import glob
 import json
 import os
+from typing import cast
 
 from qdrant_client.models import (
+    Condition,
     FieldCondition,
     Filter,
     Fusion,
@@ -26,7 +28,7 @@ class LearningRetrieval:
         self.embedding_provider = embedding_provider
         self.knowledge_dir = knowledge_dir
 
-    def retrieve_relevant(self, query: str = "", tags: list = None, limit: int = 5):
+    def retrieve_relevant(self, query: str = "", tags: list | None = None, limit: int = 5):
         """Hybrid search with tag filtering, falls back to disk."""
         if not query and not tags:
             return self._legacy_search(limit=limit)
@@ -40,7 +42,7 @@ class LearningRetrieval:
                     FieldCondition(key="category", match=MatchValue(value=tag)) for tag in tags
                 ]
                 conds = tags_conds + cat_conds
-                query_filter = Filter(should=conds)
+                query_filter = Filter(should=cast(list[Condition], conds))
 
             dense = self.embedding_provider.get_embedding(query)
             sparse = self.embedding_provider.get_sparse_embedding(query)
@@ -61,7 +63,7 @@ class LearningRetrieval:
             console.print(f"[red]Hybrid search failed: {e}. Falling back to disk.[/red]")
             return self._legacy_search(query, tags, limit)
 
-    def _legacy_search(self, query: str = "", tags: list = None, limit: int = 5):
+    def _legacy_search(self, query: str = "", tags: list | None = None, limit: int = 5):
         """Disk-based search fallback."""
         results = []
         for filepath in sorted(glob.glob(os.path.join(self.knowledge_dir, "*.json")), reverse=True):

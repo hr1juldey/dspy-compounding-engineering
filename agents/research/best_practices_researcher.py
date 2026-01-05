@@ -1,3 +1,5 @@
+from typing import cast
+
 import dspy
 
 from agents.research.schema import BestPracticesReport
@@ -64,7 +66,11 @@ class BestPracticesResearcherModule(dspy.Module):
     def __init__(self, base_dir: str = "."):
         super().__init__()
         self.tools = get_research_tools(base_dir)
-        self.agent = dspy.ReAct(BestPracticesResearcher, tools=self.tools, max_iters=3)
+        self.agent = dspy.ReAct(
+            BestPracticesResearcher,
+            tools=cast(list, self.tools),
+            max_iters=3,
+        )
 
     def forward(self, topic: str):
         logger.info(f"Starting Best Practices Research for: {topic}")

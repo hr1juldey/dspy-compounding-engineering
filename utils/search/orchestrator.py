@@ -68,7 +68,7 @@ class WebSearchOrchestrator:
         status: str,
         duration_ms: int,
         attempt: int,
-        error: str = None,
+        error: str | None = None,
         results_count: int = 0,
     ) -> None:
         """Emit search operation event."""

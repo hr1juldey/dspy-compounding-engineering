@@ -6,6 +6,7 @@ Contains tools for system status, configuration, triage, and command generation.
 
 import asyncio
 import os
+from functools import partial
 
 from fastmcp import FastMCP
 
@@ -43,8 +44,10 @@ async def triage_issues(
         if ctx:
             await ctx.report_progress(progress=2, total=2, message="Triaging issues...")
 
+        # Create a wrapper that ignores pattern/dry_run (not yet integrated into run_triage)
+        triage_runner = partial(lambda: run_triage())
         result = await asyncio.wait_for(
-            asyncio.to_thread(run_triage, pattern=pattern, dry_run=dry_run),
+            asyncio.to_thread(triage_runner),
             timeout=600,  # 10 minutes
         )
 

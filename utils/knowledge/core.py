@@ -3,7 +3,7 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from filelock import FileLock
+from filelock import BaseFileLock, FileLock
 from qdrant_client import QdrantClient
 
 from utils.io.logger import console, logger
@@ -25,6 +25,8 @@ from utils.security.scrubber import scrubber
 
 class KnowledgeBase(CollectionManagerMixin):
     """Manages learnings via service layer delegation."""
+
+    client: Optional[QdrantClient]  # type: ignore[override]
 
     def __init__(
         self, knowledge_dir: Optional[str] = None, qdrant_client: Optional[QdrantClient] = None
@@ -73,7 +75,11 @@ class KnowledgeBase(CollectionManagerMixin):
 
         # Sync if needed
         try:
-            if self.vector_db_available and self.client.count(self.collection_name).count == 0:
+            if (
+                self.vector_db_available
+                and self.client is not None
+                and self.client.count(self.collection_name).count == 0
+            ):
                 console.print("[yellow]Syncing from disk...[/yellow]")
                 self.indexer.sync_to_qdrant(self.knowledge_dir)
         except Exception as e:
@@ -98,7 +104,7 @@ class KnowledgeBase(CollectionManagerMixin):
         return filepath
 
     def retrieve_relevant(
-        self, query: str = "", tags: List[str] = None, limit: int = 5
+        self, query: str = "", tags: List[str] | None = None, limit: int = 5
     ) -> List[Dict[str, Any]]:
         """Delegate to retrieval service."""
         return self.retrieval.retrieve_relevant(query, tags, limit)
@@ -107,7 +113,7 @@ class KnowledgeBase(CollectionManagerMixin):
         """Get all learnings via retrieval service."""
         return self.retrieval._legacy_search(limit=1000)
 
-    def get_context_string(self, query: str = "", tags: List[str] = None) -> str:
+    def get_context_string(self, query: str = "", tags: List[str] | None = None) -> str:
         """Format learnings for context injection."""
         learnings = self.retrieve_relevant(query, tags)
         return self.formatter.format_context_string(learnings)
@@ -121,7 +127,7 @@ class KnowledgeBase(CollectionManagerMixin):
         """Returns codify lock file path."""
         return os.path.join(self.knowledge_dir, "codify.lock")
 
-    def get_lock(self, lock_type: str = "kb") -> FileLock:
+    def get_lock(self, lock_type: str = "kb") -> BaseFileLock:
         """Get lock instance."""
         path = self.get_codify_lock_path() if lock_type == "codify" else self.lock_path
         return FileLock(path)

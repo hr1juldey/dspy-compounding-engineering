@@ -15,7 +15,7 @@ class EventCollector:
         """Singleton pattern."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance.events: List[OperationEvent] = []
+            cls._instance.events: List[OperationEvent] = []  # type: ignore[assignment]
         return cls._instance
 
     def emit(

@@ -85,7 +85,7 @@ def _display_violations_table(enforcer: PolicyEnforcer, violations_by_severity: 
         console.print(table)
 
 
-def run_check(
+def run_check(  # noqa: C901
     repo_root: str | Path,
     paths: list[str] | None = None,
     auto_fix: bool = False,

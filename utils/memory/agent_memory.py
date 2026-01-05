@@ -7,6 +7,8 @@ Provides per-agent persistent memory for:
 - Entity relationship cache (up to 3rd degree)
 """
 
+from typing import Any, cast
+
 from mem0 import Memory
 
 from utils.io.logger import logger
@@ -62,7 +64,7 @@ class AgentMemory:
 
             context_parts = ["## Past Agent Interactions\n"]
             for mem in memories:
-                context_parts.append(f"- {mem['memory']}\n")
+                context_parts.append(f"- {cast(dict[str, Any], mem)['memory']}\n")
 
             return "\n".join(context_parts)
         except Exception as e:

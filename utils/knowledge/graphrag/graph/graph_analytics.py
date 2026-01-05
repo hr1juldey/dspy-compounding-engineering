@@ -37,7 +37,7 @@ class GraphAnalytics:
 
         # Global PageRank
         try:
-            pagerank_scores = nx.pagerank(self.graph, alpha=0.85, max_iter=100)
+            pagerank_scores = nx.pagerank(self.graph, alpha=0.85, max_iter=100)  # type: ignore[attr-defined]
         except Exception as e:
             logger.error(f"PageRank failed: {e}")
             return []
@@ -89,7 +89,7 @@ class GraphAnalytics:
 
             # Convert to dict
             clusters = {}
-            for idx, community in enumerate(communities):
+            for idx, community in enumerate(communities):  # type: ignore[arg-type]
                 clusters[idx] = list(community)
 
             logger.info(

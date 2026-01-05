@@ -23,7 +23,7 @@ class CheckService:
         Returns:
             Task ID for tracking
         """
-        task = check_policies_task.delay(
+        task = check_policies_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root, paths=paths, auto_fix=auto_fix, staged_only=staged_only
         )
         return task.id
@@ -41,7 +41,7 @@ class CheckService:
         Returns:
             Check result immediately
         """
-        result = check_policies_task.apply(
+        result = check_policies_task.apply(  # type: ignore[no-untyped-call]
             args=(repo_root,),
             kwargs={"paths": paths, "auto_fix": auto_fix, "staged_only": staged_only},
         )

@@ -13,7 +13,7 @@ class PerformanceFinding(ReviewFinding):
 class PerformanceReport(ReviewReport):
     scalability_assessment: str = Field(..., description="Assessment of scalability implications")
     optimization_opportunities: str = Field(..., description="High-level optimization suggestions")
-    findings: List[PerformanceFinding] = Field(default_factory=list)
+    findings: List[PerformanceFinding] = Field(default_factory=list)  # type: ignore[override]
 
 
 class PerformanceOracle(dspy.Signature):

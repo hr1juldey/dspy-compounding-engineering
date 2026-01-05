@@ -53,7 +53,7 @@ def get_native_dimension(model_name: str) -> int | None:
     """
     if not is_matryoshka_model(model_name):
         return None
-    return MATRYOSHKA_MODELS[model_name]["native_dimension"]
+    return MATRYOSHKA_MODELS[model_name]["native_dimension"]  # type: ignore[return-value]
 
 
 def get_supported_dimensions(model_name: str) -> list[int]:
@@ -68,7 +68,7 @@ def get_supported_dimensions(model_name: str) -> list[int]:
     """
     if not is_matryoshka_model(model_name):
         return []
-    return MATRYOSHKA_MODELS[model_name]["supported_dimensions"]
+    return MATRYOSHKA_MODELS[model_name]["supported_dimensions"]  # type: ignore[return-value]
 
 
 def validate_dimension(model_name: str, requested_dim: int) -> bool:

@@ -21,7 +21,7 @@ class ModuleExtractor:
             line_start=1,
             line_end=len(code.split("\n")),
             properties={
-                "docstring": ast.get_docstring(tree),
+                "docstring": ast.get_docstring(tree),  # type: ignore[arg-type]
                 "size_lines": len(code.split("\n")),
             },
             relations={},

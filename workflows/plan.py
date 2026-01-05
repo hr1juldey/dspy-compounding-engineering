@@ -1,6 +1,8 @@
 import os
 import re
+from typing import cast
 
+import dspy
 from rich.console import Console
 
 from agents.research import (
@@ -58,26 +60,35 @@ def run_plan(feature_description: str):
             console.print(f"[dim]Found {len(semantic_results)} semantic code matches[/dim]")
 
     with console.status("Running Research Agents..."):
-        repo_research = KBPredict(
-            RepoResearchAnalystModule,
-            kb_tags=["planning", "repo-research"],
-        )(feature_description=feature_description)
+        repo_research = cast(
+            dspy.Prediction,
+            KBPredict(
+                RepoResearchAnalystModule,
+                kb_tags=["planning", "repo-research"],
+            )(feature_description=feature_description),
+        )
         console.print("[green]✓ Repo Research Complete[/green]")
         repo_md = repo_research.research_report.format_markdown()
         _save_stage_output(plans_dir, safe_name, "1-repo-research", repo_md)
 
-        best_practices = KBPredict(
-            BestPracticesResearcherModule,
-            kb_tags=["planning", "best-practices"],
-        )(topic=feature_description)
+        best_practices = cast(
+            dspy.Prediction,
+            KBPredict(
+                BestPracticesResearcherModule,
+                kb_tags=["planning", "best-practices"],
+            )(topic=feature_description),
+        )
         console.print("[green]✓ Best Practices Research Complete[/green]")
         bp_md = best_practices.research_report.format_markdown()
         _save_stage_output(plans_dir, safe_name, "2-best-practices", bp_md)
 
-        framework_docs = KBPredict(
-            FrameworkDocsResearcherModule,
-            kb_tags=["planning", "framework-docs"],
-        )(framework_or_library=feature_description)
+        framework_docs = cast(
+            dspy.Prediction,
+            KBPredict(
+                FrameworkDocsResearcherModule,
+                kb_tags=["planning", "framework-docs"],
+            )(framework_or_library=feature_description),
+        )
         console.print("[green]✓ Framework Docs Research Complete[/green]")
         fw_md = framework_docs.documentation_report.format_markdown()
         _save_stage_output(plans_dir, safe_name, "3-framework-docs", fw_md)
@@ -97,10 +108,13 @@ def run_plan(feature_description: str):
     # 2. SpecFlow Analysis
     console.rule("Phase 2: SpecFlow Analysis")
     with console.status("Analyzing User Flows..."):
-        spec_flow = KBPredict(
-            SpecFlowAnalyzer,
-            kb_tags=["planning", "spec-flow"],
-        )(feature_description=feature_description, research_findings=research_summary)
+        spec_flow = cast(
+            dspy.Prediction,
+            KBPredict(
+                SpecFlowAnalyzer,
+                kb_tags=["planning", "spec-flow"],
+            )(feature_description=feature_description, research_findings=research_summary),
+        )
     console.print("[green]✓ SpecFlow Analysis Complete[/green]")
     _save_stage_output(plans_dir, safe_name, "5-specflow-analysis", spec_flow.flow_analysis)
 
@@ -112,10 +126,13 @@ def run_plan(feature_description: str):
             kb_tags=["planning", "architecture"],
             kb_query=feature_description,
         )
-        plan_gen = planner(
-            feature_description=feature_description,
-            research_summary=research_summary,
-            spec_flow_analysis=spec_flow.flow_analysis,
+        plan_gen = cast(
+            dspy.Prediction,
+            planner(
+                feature_description=feature_description,
+                research_summary=research_summary,
+                spec_flow_analysis=spec_flow.flow_analysis,
+            ),
         )
 
     plan_content = plan_gen.plan_content

@@ -5,6 +5,7 @@ Traces data flow between caller and callee using AST + DSPy.
 """
 
 import ast
+from typing import cast
 
 import dspy
 
@@ -58,12 +59,15 @@ class DataFlowTracer(dspy.Module):
         if not call_site:
             return None
 
-        result = self.tracer(
-            caller_name=caller_name,
-            callee_name=callee_name,
-            call_site_code=call_site,
-            caller_params="",
-            callee_params=callee_params_json,
+        result = cast(
+            dspy.Prediction,
+            self.tracer(
+                caller_name=caller_name,
+                callee_name=callee_name,
+                call_site_code=call_site,
+                caller_params="",
+                callee_params=callee_params_json,
+            ),
         )
 
         return InteractionFlow(

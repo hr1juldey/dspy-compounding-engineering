@@ -25,7 +25,7 @@ class WorkService:
         Returns:
             Task ID for tracking
         """
-        task = execute_work_task.delay(
+        task = execute_work_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root,
             pattern=pattern,
             dry_run=dry_run,

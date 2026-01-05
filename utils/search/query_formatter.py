@@ -1,5 +1,7 @@
 """DSPy-powered query optimization."""
 
+from typing import cast
+
 import dspy
 
 from utils.search.query_analyzer import QueryIntent
@@ -25,7 +27,9 @@ class QueryFormatter:
     def format(self, query: str, intent: QueryIntent) -> str:
         """Format query with DSPy."""
         try:
-            result = self.formatter(intent=intent.value, original_query=query)
+            result = cast(
+                dspy.Prediction, self.formatter(intent=intent.value, original_query=query)
+            )
             return result.optimized_query
         except Exception:
             # Fallback: return original query

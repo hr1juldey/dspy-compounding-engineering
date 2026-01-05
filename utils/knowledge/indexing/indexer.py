@@ -27,14 +27,14 @@ class CodebaseIndexer(CollectionManagerMixin):
 
     def __init__(
         self,
-        qdrant_client: QdrantClient,
+        qdrant_client: Optional[QdrantClient],
         embedding_provider: EmbeddingProvider,
         collection_name: str,
     ):
         if not any(c in collection_name for c in "_-"):
             raise ValueError(f"Collection '{collection_name}' needs hash suffix")
 
-        self.client = qdrant_client
+        self.client = qdrant_client  # type: ignore[assignment]
         self.embedding_provider = embedding_provider
         self.collection_name = collection_name
         self.vector_db_available = self.client is not None
@@ -67,7 +67,7 @@ class CodebaseIndexer(CollectionManagerMixin):
         self,
         root_dir: str,
         force_recreate: bool = False,
-        progress_callback: Optional[callable] = None,
+        progress_callback: Optional[callable] = None,  # type: ignore[type-arg]
     ) -> dict:
         """Index codebase - delegates to async or sequential mode."""
         import time
@@ -126,7 +126,7 @@ class CodebaseIndexer(CollectionManagerMixin):
             stats = {"updated": updated, "skipped": skipped}
 
         elapsed_time = time.time() - start_time
-        stats["time_sec"] = elapsed_time
+        stats["time_sec"] = int(elapsed_time)
 
         logger.success(
             f"Indexing complete: {stats['updated']} updated, "

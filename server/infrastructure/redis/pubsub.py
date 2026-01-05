@@ -3,7 +3,7 @@ Redis pub/sub for progress broadcasting.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncIterator
 
 import redis.asyncio as aioredis
@@ -34,7 +34,7 @@ def publish_progress(task_id: str, percent: int, message: str) -> None:
             "task_id": task_id,
             "percent": percent,
             "message": message,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         client.publish(channel, json.dumps(payload))

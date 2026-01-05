@@ -9,6 +9,7 @@ Scheduled maintenance for mem0 agent memories:
 
 import json
 import time
+from typing import cast
 
 import dspy
 
@@ -50,7 +51,7 @@ class AgentMemoryMaintainer:
         try:
             # Get agent memories
             agent_memory = AgentMemory(agent_name)
-            memories = agent_memory.get_all(user_id=agent_name)
+            memories = agent_memory.get_all(user_id=agent_name)  # type: ignore[attr-defined]
 
             if not memories:
                 logger.debug(f"No memories found for {agent_name}")
@@ -60,14 +61,16 @@ class AgentMemoryMaintainer:
             memories_json = json.dumps(memories, indent=2)
 
             # Use DSPy to compress
-            result = self.memory_compressor(agent_memories_json=memories_json)
+            prediction = cast(
+                dspy.Prediction, self.memory_compressor(agent_memories_json=memories_json)
+            )
 
             # Parse compressed memories
-            compressed_memories = json.loads(result.compressed_memories_json)
-            stats = result.compression_stats
+            compressed_memories = json.loads(prediction.compressed_memories_json)
+            stats = prediction.compression_stats
 
             # Clear old memories and add compressed ones
-            agent_memory.delete_all(user_id=agent_name)
+            agent_memory.delete_all(user_id=agent_name)  # type: ignore[attr-defined]
 
             for memory in compressed_memories:
                 agent_memory.add_interaction(

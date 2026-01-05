@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import List
+from typing import List, cast
 
 import dspy
 
@@ -86,7 +86,8 @@ class LLMKBCompressor(dspy.Module):
 
         # Use split-compress-merge strategy
         if len(content) < 4000:
-            result = self.compressor(content=content, ratio=ratio).compressed_content
+            prediction = cast(dspy.Prediction, self.compressor(content=content, ratio=ratio))
+            result = prediction.compressed_content
         else:
             chunks = self._split_markdown_by_headers(content)
             compressed_chunks = []
@@ -97,7 +98,7 @@ class LLMKBCompressor(dspy.Module):
                     continue
 
                 try:
-                    res = self.compressor(content=chunk, ratio=ratio)
+                    res = cast(dspy.Prediction, self.compressor(content=chunk, ratio=ratio))
                     compressed_chunks.append(res.compressed_content)
                 except Exception:
                     compressed_chunks.append(chunk)

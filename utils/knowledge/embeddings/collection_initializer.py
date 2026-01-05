@@ -5,6 +5,8 @@ Single Responsibility: Proactively create all required Qdrant collections
 to prevent 400 errors and wasteful LLM calls.
 """
 
+from typing import Optional
+
 from qdrant_client import QdrantClient
 
 from utils.io.logger import logger
@@ -18,7 +20,7 @@ class CollectionInitializer:
     any indexing/search operations.
     """
 
-    def __init__(self, client: QdrantClient, embedding_provider, ensure_method):
+    def __init__(self, client: Optional[QdrantClient], embedding_provider, ensure_method):
         """
         Initialize collection manager.
 
@@ -87,6 +89,10 @@ class CollectionInitializer:
 
     def _ensure_entities_collection(self, project_hash: str):
         """Ensure entities collection exists (for GraphRAG)."""
+        if not self.client:
+            logger.debug("Qdrant client unavailable, skipping entities collection")
+            return
+
         entities_collection = f"entities_{project_hash}"
         try:
             if not self.client.collection_exists(entities_collection):

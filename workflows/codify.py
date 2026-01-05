@@ -5,6 +5,8 @@ This workflow allows users to manually codify feedback, learnings, or instructio
 into the persistent knowledge base using the FeedbackCodifier agent.
 """
 
+from typing import cast
+
 import dspy
 from rich.console import Console
 from rich.panel import Panel
@@ -39,10 +41,13 @@ def run_codify(feedback: str, source: str = "manual_input"):
     with console.status("[cyan]Analyzing and codifying feedback...[/cyan]"):
         # Use ChainOfThought for robust typed output
         codifier = dspy.ChainOfThought(FeedbackCodifier)
-        result = codifier(
-            feedback_content=feedback,
-            feedback_source=source,
-            project_context=existing_knowledge,
+        result = cast(
+            dspy.Prediction,
+            codifier(
+                feedback_content=feedback,
+                feedback_source=source,
+                project_context=existing_knowledge,
+            ),
         )
 
     # 3. Save

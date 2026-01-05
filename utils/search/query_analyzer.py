@@ -82,4 +82,4 @@ class QueryAnalyzer:
         if max_score == 0:
             return QueryIntent.GENERAL
 
-        return max(scores, key=scores.get)
+        return max(scores, key=scores.get)  # type: ignore[no-overload-found]

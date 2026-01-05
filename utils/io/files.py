@@ -1,9 +1,18 @@
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import List, TypedDict
 
 from rich.console import Console
 
 from utils.io.safe import run_safe_command, safe_write, validate_path
+
+
+class FileEditSpec(TypedDict):
+    """Specification for a file edit operation."""
+
+    start_line: int
+    end_line: int
+    content: str
+
 
 console = Console()
 
@@ -36,7 +45,7 @@ def list_directory(path: str, base_dir: str = ".") -> str:
         return f"Error listing directory: {str(e)}"
 
 
-def search_files(query: str, path: str = ".", regex: bool = False, base_dir: str = ".") -> str:
+def search_files(query: str, path: str = ".", regex: bool = False, base_dir: str = ".") -> str:  # noqa: C901
     """
     Search for a string or regex in files at the given path.
     Uses git grep if available, otherwise falls back to grep -r with exclusions.
@@ -160,7 +169,7 @@ def read_file_range(
 
 def edit_file_lines(  # noqa: C901
     file_path: str,
-    edits: List[Dict[str, Union[int, str]]],
+    edits: List[FileEditSpec],
     base_dir: str = ".",
 ) -> str:
     """

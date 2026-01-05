@@ -27,5 +27,5 @@ class TriageService:
         Returns:
             Task ID for async tracking
         """
-        result = triage_task.delay(repo_root=repo_root, pattern=pattern, dry_run=dry_run)
+        result = triage_task.delay(repo_root=repo_root, pattern=pattern, dry_run=dry_run)  # type: ignore[no-untyped-call]
         return result.id

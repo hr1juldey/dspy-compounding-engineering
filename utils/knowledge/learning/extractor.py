@@ -5,17 +5,18 @@ Provides reusable functions for extracting and codifying learnings
 across all workflows (review, triage, work).
 """
 
+from typing import cast
+
 import dspy
 
 from utils.io.logger import console, logger
-from utils.knowledge.core import KnowledgeBase
 
 
 def codify_learning(
     context: str,
     source: str,
     category: str,
-    metadata: dict = None,
+    metadata: dict | None = None,
     silent: bool = False,
 ) -> bool:
     """
@@ -39,8 +40,7 @@ def codify_learning(
             configure_dspy()
 
         from agents.workflow.feedback_codifier import FeedbackCodifier
-
-        from .module import KBPredict
+        from utils.knowledge.module import KBPredict
 
         if not silent:
             console.print(f"[dim cyan]Codifying {category} learnings...[/dim cyan]")
@@ -54,10 +54,13 @@ def codify_learning(
         codifier_cot = dspy.ChainOfThought(FeedbackCodifier)
         codifier = KBPredict.wrap(codifier_cot, kb_tags=kb_tags)
 
-        result = codifier(
-            feedback_content=context,
-            feedback_source=source,
-            project_context="",
+        result = cast(
+            dspy.Prediction,
+            codifier(
+                feedback_content=context,
+                feedback_source=source,
+                project_context="",
+            ),
         )
 
         # Result should already be the Pydantic object
@@ -85,6 +88,8 @@ def codify_learning(
             codified_data.update(metadata)
 
         # Save to Knowledge Base with file-system mutex to prevent race conditions
+        from utils.knowledge.core import KnowledgeBase
+
         kb = KnowledgeBase()
 
         with kb.get_lock("codify"):
@@ -191,8 +196,8 @@ def codify_review_findings(findings: list, todos_created: int, silent: bool = Fa
 def codify_triage_decision(
     finding_content: str,
     decision: str,
-    reason: str = None,
-    proposed_solution: str = None,
+    reason: str | None = None,
+    proposed_solution: str | None = None,
 ) -> None:
     """
     Extract learnings from a triage decision.
@@ -270,7 +275,7 @@ def codify_batch_triage_session(
     approved_count: int,
     skipped_count: int,
     total_count: int,
-    approved_todos: list = None,
+    approved_todos: list | None = None,
 ) -> None:
     """
     Extract learnings from an entire triage session.

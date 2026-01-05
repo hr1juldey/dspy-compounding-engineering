@@ -5,6 +5,7 @@ Triggers deep graph analysis when semantic search isn't enough.
 """
 
 import json
+from typing import cast
 
 import dspy
 
@@ -43,7 +44,7 @@ def get_entity_search_tool() -> dspy.Tool:
             JSON string with entity details + relationships
         """
         navigator = CodeNavigatorModule()
-        result = navigator(query=entity_name, max_depth=max_depth)
+        result = cast(dspy.Prediction, navigator(query=entity_name, max_depth=max_depth))
 
         return json.dumps(result.model_dump(), indent=2)
 
@@ -65,7 +66,7 @@ def get_impact_analysis_tool() -> dspy.Tool:
             JSON with affected entities, blast radius
         """
         analyzer = ImpactAnalyzerModule()
-        result = analyzer(target_entity=entity_name, change_type=change_type)
+        result = cast(dspy.Prediction, analyzer(target_entity=entity_name, change_type=change_type))
 
         return json.dumps(result.model_dump(), indent=2)
 
@@ -86,7 +87,7 @@ def get_architecture_map_tool() -> dspy.Tool:
             JSON with PageRank hubs, clusters, layers
         """
         mapper = ArchitectureMapperModule()
-        result = mapper(analysis_scope=scope)
+        result = cast(dspy.Prediction, mapper(analysis_scope=scope))
 
         return json.dumps(result.model_dump(), indent=2)
 
@@ -108,7 +109,7 @@ def get_dependency_trace_tool() -> dspy.Tool:
             JSON with path, circular deps
         """
         tracer = DependencyTracerModule()
-        result = tracer(source_entity=source, target_entity=target)
+        result = cast(dspy.Prediction, tracer(source_entity=source, target_entity=target))
 
         return json.dumps(result.model_dump(), indent=2)
 

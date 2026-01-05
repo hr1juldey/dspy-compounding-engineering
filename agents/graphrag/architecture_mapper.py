@@ -85,7 +85,7 @@ class ArchitectureMapperModule(dspy.Module):
         super().__init__()
 
         # Initialize graph store + GraphRAG
-        qdrant = registry.get_qdrant_client()
+        qdrant = registry.get_qdrant_client_required()
         project_hash = get_project_hash()
         graph_store = GraphStore(qdrant, EmbeddingProvider(), f"entities_{project_hash}")
         self.graph_rag = CodeGraphRAG(graph_store)

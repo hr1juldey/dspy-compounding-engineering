@@ -115,7 +115,7 @@ class CodeGraphRAG:
         }
 
         try:
-            pagerank_scores = nx.pagerank(
+            pagerank_scores = nx.pagerank(  # type: ignore[attr-defined]
                 subgraph, personalization=personalization, alpha=0.85, max_iter=100
             )
         except Exception as e:
@@ -164,7 +164,7 @@ class CodeGraphRAG:
             self.build_full_graph()
 
         try:
-            path = nx.shortest_path(self.graph, source_entity_id, target_entity_id)
+            path = nx.shortest_path(self.graph, source_entity_id, target_entity_id)  # type: ignore[attr-defined]
 
             # Get entity details for each node in path
             result = []
@@ -185,3 +185,50 @@ class CodeGraphRAG:
         except nx.NetworkXNoPath:
             logger.warning(f"No path found between {source_entity_id} and {target_entity_id}")
             return None
+
+    def get_top_entities_by_pagerank(self, top_k: int = 20) -> list[dict]:
+        """Get top entities ranked by PageRank."""
+        if not self.graph.nodes():
+            self.build_full_graph()
+
+        try:
+            pagerank = nx.pagerank(self.graph)  # type: ignore[attr-defined]
+            sorted_entities = sorted(pagerank.items(), key=lambda x: x[1], reverse=True)
+
+            results = []
+            for entity_id, pr_score in sorted_entities[:top_k]:
+                entity = self.graph_store.get_entity(entity_id)
+                if entity:
+                    results.append(
+                        {
+                            "entity_id": entity.id,
+                            "name": entity.name,
+                            "type": entity.type,
+                            "file_path": entity.file_path,
+                            "pagerank": pr_score,
+                        }
+                    )
+
+            return results
+        except Exception as e:
+            logger.error(f"PageRank computation failed: {e}")
+            return []
+
+    def get_graph_clusters(self, num_clusters: int = 10) -> dict[int, list[str]]:
+        """Detect graph clusters using greedy modularity optimization."""
+        if not self.graph.nodes():
+            self.build_full_graph()
+
+        try:
+            # Convert to undirected for community detection
+            undirected = self.graph.to_undirected()
+            communities = nx.greedy_modularity_communities(undirected)  # type: ignore[attr-defined]
+
+            clusters = {}
+            for idx, community in enumerate(communities[:num_clusters]):
+                clusters[idx] = list(community)
+
+            return clusters
+        except Exception as e:
+            logger.error(f"Clustering failed: {e}")
+            return {}

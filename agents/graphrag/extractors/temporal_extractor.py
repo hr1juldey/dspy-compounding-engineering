@@ -31,13 +31,17 @@ class TemporalExtractor:
             # Parse commits into CodeChange objects
             changes = []
             for commit in commits:
-                metadata = self.git_service.get_commit_metadata(commit)
+                commit_sha = commit.get("sha", "")
+                metadata = self.git_service.get_commit_metadata(commit_sha)
+                author = metadata.get("author") or commit.get("author") or "unknown"
+                date = metadata.get("date") or commit.get("date") or "unknown"
+                message = metadata.get("message") or commit.get("message") or ""
                 changes.append(
                     CodeChange(
-                        commit_sha=commit,
-                        author=metadata.get("author", "unknown"),
-                        date=metadata.get("date", "unknown"),
-                        message=metadata.get("message", ""),
+                        commit_sha=commit_sha,
+                        author=str(author),
+                        date=str(date),
+                        message=str(message),
                         change_type="modified",
                         lines_added=0,
                         lines_removed=0,

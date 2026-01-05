@@ -1,7 +1,9 @@
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import cast
 
+import dspy
 from rich.console import Console
 from rich.panel import Panel
 
@@ -18,7 +20,7 @@ from utils.todo import (
 console = Console()
 
 
-def _detect_input_type(pattern: str) -> str:
+def _detect_input_type(pattern: str | None) -> str:
     """Detect whether input is todo, plan, or pattern."""
     if not pattern:
         return "help"
@@ -39,7 +41,7 @@ def _detect_input_type(pattern: str) -> str:
 
 
 def run_unified_work(
-    pattern: str = None,
+    pattern: str | None = None,
     dry_run: bool = False,
     parallel: bool = True,
     max_workers: int = 3,
@@ -66,11 +68,11 @@ def run_unified_work(
         )
     )
 
-    if input_type == "todo":
+    if input_type == "todo" and pattern:
         _run_react_todo(pattern, dry_run, parallel, max_workers, in_place)
-    elif input_type == "plan":
+    elif input_type == "plan" and pattern:
         _run_react_plan(pattern, dry_run, in_place)
-    elif input_type == "pattern":
+    elif input_type == "pattern" and pattern:
         _run_react_todo_batch(pattern, dry_run, parallel, max_workers, in_place)
     else:
         console.print(
@@ -314,7 +316,7 @@ def _run_react_plan(plan_path: str, dry_run: bool, in_place: bool = True):
     try:
         executor = ReActPlanExecutor(base_dir=base_dir)
 
-        result = executor(plan_content=content, plan_path=plan_path)
+        result = cast(dspy.Prediction, executor(plan_content=content, plan_path=plan_path))
 
         if result.success_status:
             console.print(f"[green]Success:[/green] {result.execution_summary}")

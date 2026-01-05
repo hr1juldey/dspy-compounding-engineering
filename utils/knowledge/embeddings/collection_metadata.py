@@ -6,6 +6,7 @@ dimension changes and trigger reindexing when needed.
 """
 
 from qdrant_client import QdrantClient
+from qdrant_client.models import PointStruct
 
 from utils.io.logger import logger
 
@@ -34,7 +35,9 @@ class CollectionMetadata:
         """
         self.client = client
 
-    def set_dimension(self, collection_name: str, dimension: int, model_name: str = None) -> None:
+    def set_dimension(
+        self, collection_name: str, dimension: int, model_name: str | None = None
+    ) -> None:
         """
         Store dimension metadata in collection.
 
@@ -54,17 +57,17 @@ class CollectionMetadata:
             }
 
             if model_name:
-                metadata_payload[self.MODEL_KEY] = model_name
+                metadata_payload[self.MODEL_KEY] = model_name  # type: ignore[operator]
 
             # Upsert metadata point with special UUID
             self.client.upsert(
                 collection_name=collection_name,
                 points=[
-                    {
-                        "id": self.METADATA_ID,
-                        "vector": [0.0] * dimension,
-                        "payload": metadata_payload,
-                    }
+                    PointStruct(
+                        id=self.METADATA_ID,
+                        vector=[0.0] * dimension,
+                        payload=metadata_payload,
+                    )
                 ],
             )
 
@@ -95,6 +98,10 @@ class CollectionMetadata:
                 return None
 
             metadata = points[0].payload
+            if not metadata:
+                logger.debug(f"No payload for {collection_name}")
+                return None
+
             dimension = metadata.get(self.METADATA_KEY)
 
             if dimension:

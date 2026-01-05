@@ -13,7 +13,7 @@ import time
 import requests
 
 
-def test_http_transport():
+def test_http_transport():  # noqa: C901
     """Test MCP server with HTTP transport."""
     print("🚀 Starting MCP server with HTTP transport on port 12001...\n")
 

@@ -127,8 +127,8 @@ class KnowledgeDocumentation:
         self._log("Performing LLM compression...", color="dim", silent=silent)
         compressor = LLMKBCompressor()
         compressed_content = compressor(content=content, ratio=ratio)
-        self._compression_cache[cache_key] = compressed_content
-        return compressed_content
+        self._compression_cache[cache_key] = compressed_content  # type: ignore[assignment]
+        return compressed_content  # type: ignore[return-value]
 
     def compress_ai_md(
         self, ratio: float = 0.5, dry_run: bool = False, silent: bool = False

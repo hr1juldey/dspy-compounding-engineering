@@ -9,6 +9,8 @@ Multi-step pipeline following SOLID principles:
 Each signature has single responsibility for easier LLM processing.
 """
 
+from typing import cast
+
 import dspy
 
 
@@ -192,29 +194,38 @@ class EntityEnrichmentModule(dspy.Module):
         source_truncated = source_code[:1500]
 
         # Step 1: Analyze purpose & complexity (quick, simple)
-        purpose_result = self.purpose_analyzer(
-            entity_type=entity_type,
-            entity_name=entity_name,
-            source_code=source_truncated,
+        purpose_result = cast(
+            dspy.Prediction,
+            self.purpose_analyzer(
+                entity_type=entity_type,
+                entity_name=entity_name,
+                source_code=source_truncated,
+            ),
         )
 
         # Step 2: Enhance docstring (uses purpose from step 1)
-        docstring_result = self.docstring_enhancer(
-            entity_type=entity_type,
-            entity_name=entity_name,
-            purpose_summary=purpose_result.purpose_summary,
-            source_code=source_truncated,
-            existing_docstring=existing_docstring or "None",
+        docstring_result = cast(
+            dspy.Prediction,
+            self.docstring_enhancer(
+                entity_type=entity_type,
+                entity_name=entity_name,
+                purpose_summary=purpose_result.purpose_summary,
+                source_code=source_truncated,
+                existing_docstring=existing_docstring or "None",
+            ),
         )
 
         # Step 3: Infer types (only for functions/methods)
         inferred_types = {}
         if entity_type in ["Function", "Method"]:
             try:
-                type_result = self.type_inferrer(
-                    entity_type=entity_type,
-                    entity_name=entity_name,
-                    source_code=source_truncated,
+                type_result = cast(
+                    dspy.Prediction,
+                    self.type_inferrer(
+                        entity_type=entity_type,
+                        entity_name=entity_name,
+                        source_code=source_truncated,
+                    ),
                 )
                 # Parse JSON string to dict
                 import json

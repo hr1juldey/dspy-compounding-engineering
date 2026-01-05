@@ -26,7 +26,7 @@ def register_semantic(protocol_cls: Type[SemanticProtocol]):
 
 def get_all_protocols() -> list[Type[PolicyProtocol]]:
     """Get all registered protocols."""
-    return _STATIC_PROTOCOLS + _SEMANTIC_PROTOCOLS
+    return _STATIC_PROTOCOLS + _SEMANTIC_PROTOCOLS  # type: ignore[return-value]
 
 
 def get_static_protocols() -> list[Type[StaticProtocol]]:

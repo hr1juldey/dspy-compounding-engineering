@@ -12,7 +12,7 @@ import pytest
 
 
 @pytest.mark.benchmark
-def test_determine_optimal_batch_size():
+def test_determine_optimal_batch_size():  # noqa: C901
     """
     Benchmark machine to find optimal batch size for embeddings.
 

@@ -28,7 +28,7 @@ class QdrantAsyncWrapper:
         await wrapper.async_upsert(...)  # Non-blocking
     """
 
-    def __init__(self, url: str, prefer_async: bool = False, timeout: float = 90.0):
+    def __init__(self, url: str, prefer_async: bool = False, timeout: int = 90):
         """
         Initialize dual-mode client.
 

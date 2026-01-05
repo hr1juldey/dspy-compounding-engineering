@@ -66,12 +66,12 @@ def get_system_config() -> dict:
 
 
 @resources_server.resource("system://status")
-def get_system_status_resource() -> dict:
+def get_system_status_resource() -> str:
     """
     Get current system health status.
 
     Returns:
-        Dictionary with service availability status
+        Formatted string with service availability status
     """
     from utils.io import get_system_status
 

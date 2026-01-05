@@ -4,6 +4,8 @@ Multi-hop search over code graph using DSPy + dspy-qdrant.
 Combines HNSW vector search with NetworkX graph traversal.
 """
 
+from typing import cast
+
 import dspy
 from dspy_qdrant import QdrantRM
 from pydantic import BaseModel
@@ -82,7 +84,7 @@ class MultiHopSearcher(dspy.Module):
         super().__init__()
 
         # dspy-qdrant retriever
-        qdrant = registry.get_qdrant_client()
+        qdrant = registry.get_qdrant_client_required()
         project_hash = get_project_hash()
 
         self.retriever = QdrantRM(
@@ -101,7 +103,7 @@ class MultiHopSearcher(dspy.Module):
     def forward(self, start_query: str, target_query: str, max_hops: int = 3):
         # Step 1: Find start entities via HNSW
         start_results = self.retriever(start_query)
-        if not start_results:
+        if not start_results or not isinstance(start_results, list):
             return MultiHopResult(
                 found=False,
                 hops=0,
@@ -112,7 +114,7 @@ class MultiHopSearcher(dspy.Module):
 
         # Step 2: Find target entities via HNSW
         target_results = self.retriever(target_query)
-        if not target_results:
+        if not target_results or not isinstance(target_results, list):
             return MultiHopResult(
                 found=False,
                 hops=0,
@@ -126,11 +128,24 @@ class MultiHopSearcher(dspy.Module):
             self.graph_rag.build_full_graph()
 
         # Get entity IDs from results
-        start_id = start_results[0]["id"]
-        target_id = target_results[0]["id"]
+        start_item = start_results[0] if start_results else None
+        target_item = target_results[0] if target_results else None
+
+        # Extract IDs - handle both string and dict formats
+        start_id = start_item.get("id") if isinstance(start_item, dict) else start_item
+        target_id = target_item.get("id") if isinstance(target_item, dict) else target_item
+
+        if not start_id or not target_id:
+            return MultiHopResult(
+                found=False,
+                hops=0,
+                path=[],
+                alternative_paths=[],
+                reasoning="Could not extract entity IDs",
+            )
 
         # Find path
-        path = self.graph_rag.find_shortest_path(start_id, target_id)
+        path = self.graph_rag.find_shortest_path(cast(str, start_id), cast(str, target_id))
 
         if not path:
             return MultiHopResult(

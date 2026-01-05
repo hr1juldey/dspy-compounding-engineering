@@ -177,7 +177,7 @@ def _gather_review_context(pr_url_or_id: str, project: bool = False) -> tuple[st
             code_diff = context_service.gather_smart_context(task=audit_task)
             if not code_diff:
                 logger.error("No source files found to review!")
-                return None, None
+                return None, None  # type: ignore[return-value]
             logger.success(f"Gathered {len(code_diff):,} characters of project code")
         elif pr_url_or_id == "latest":
             # Default to checking current staged/unstaged changes or HEAD
@@ -220,7 +220,7 @@ def _gather_review_context(pr_url_or_id: str, project: bool = False) -> tuple[st
 
         if not code_diff:
             logger.error("No diff found to review!")
-            return None, None
+            return None, None  # type: ignore[return-value]
 
     except Exception:
         logger.error("Error fetching PR content. Please check git and gh CLI status.")

@@ -1,3 +1,5 @@
+from typing import cast
+
 import dspy
 
 from agents.research.schema import FrameworkDocsReport
@@ -55,7 +57,11 @@ class FrameworkDocsResearcherModule(dspy.Module):
     def __init__(self, base_dir: str = "."):
         super().__init__()
         self.tools = get_research_tools(base_dir)
-        self.agent = dspy.ReAct(FrameworkDocsResearcher, tools=self.tools, max_iters=3)
+        self.agent = dspy.ReAct(
+            FrameworkDocsResearcher,
+            tools=cast(list, self.tools),
+            max_iters=3,
+        )
 
     def forward(self, framework_or_library: str):
         logger.info(f"Starting Framework Docs Research for: {framework_or_library}")

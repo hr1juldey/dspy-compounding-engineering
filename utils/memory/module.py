@@ -5,7 +5,7 @@ Wraps DSPy modules with persistent agent memory injection.
 Similar to KBPredict but uses mem0 for agent-specific memory.
 """
 
-from typing import Any
+from typing import Any, cast
 
 import dspy
 
@@ -46,7 +46,7 @@ class MemoryPredict(dspy.Module):
         augmented_kwargs = self._inject_memory_context(kwargs)
 
         # Call predictor
-        result = self.predictor(**augmented_kwargs)
+        result = cast(dspy.Prediction, self.predictor(**augmented_kwargs))
 
         # Store interaction
         query_parts = [str(v)[:500] for v in kwargs.values() if isinstance(v, str)]

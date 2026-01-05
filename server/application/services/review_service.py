@@ -22,7 +22,7 @@ class ReviewService:
         Returns:
             Task ID for tracking
         """
-        task = review_code_task.delay(
+        task = review_code_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root, pr_url_or_id=pr_url_or_id, project=project
         )
         return task.id

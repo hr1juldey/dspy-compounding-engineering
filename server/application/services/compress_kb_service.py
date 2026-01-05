@@ -27,5 +27,5 @@ class CompressKBService:
         Returns:
             Task ID for async tracking
         """
-        result = compress_kb_task.delay(repo_root=repo_root, ratio=ratio, dry_run=dry_run)
+        result = compress_kb_task.delay(repo_root=repo_root, ratio=ratio, dry_run=dry_run)  # type: ignore[no-untyped-call]
         return result.id

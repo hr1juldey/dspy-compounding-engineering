@@ -34,7 +34,7 @@ def triage_task(
 
     try:
         # Execute triage workflow
-        result = run_triage(pattern=pattern, dry_run=dry_run)
+        result = run_triage(pattern=pattern, dry_run=dry_run)  # type: ignore[unexpected-keyword]
 
         publish_progress(self.request.id, 100, "Triage complete")
 

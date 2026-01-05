@@ -62,6 +62,7 @@ def get_model_max_tokens(model_name: str, provider: str = "openai") -> int:
         max_output = model_info.get("max_output_tokens") or model_info.get(
             "max_tokens", DEFAULT_MAX_TOKENS
         )
+        max_output = max_output or DEFAULT_MAX_TOKENS
         result = min(max_output, 32768)
         console.print(f"[dim]Model {lookup_name}: max_tokens={max_output}, using {result}[/dim]")
         return result
@@ -113,7 +114,7 @@ def ensure_dspy_configured(env_file: str | None = None):
         logger.debug(f"Process {worker_id}: DSPy configured successfully")
 
 
-def configure_dspy(env_file: str | None = None):
+def configure_dspy(env_file: str | None = None):  # noqa: C901
     """Configure DSPy with the appropriate LM provider and settings."""
     from server.config.env_loader import load_configuration
     from server.config.service_registry import registry

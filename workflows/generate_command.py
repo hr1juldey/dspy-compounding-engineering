@@ -132,7 +132,7 @@ def run_generate_command(description: str, dry_run: bool = False):  # noqa: C901
         )
 
         # Get typed result
-        command_spec_obj = result.command_spec
+        command_spec_obj = result.command_spec  # type: ignore[attr-defined]
         if not command_spec_obj:
             console.print("[red]Agent failed to return a valid command specification.[/red]")
             return None

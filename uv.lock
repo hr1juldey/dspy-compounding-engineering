@@ -981,6 +981,7 @@ dependencies = [
     { name = "sqlmodel" },
     { name = "tiktoken" },
     { name = "typer" },
+    { name = "types-networkx" },
 ]
 
 [package.optional-dependencies]
@@ -1047,6 +1048,7 @@ requires-dist = [
     { name = "sqlmodel", specifier = ">=0.0.31" },
     { name = "tiktoken", specifier = ">=0.7.0" },
     { name = "typer", specifier = ">=0.9.0" },
+    { name = "types-networkx", specifier = "==3.6.1.20251220" },
 ]
 provides-extras = ["full"]
 
@@ -5164,6 +5166,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f9/3b/2f60ce16f578b1db5b8816d37d6a4d9786b33b76407fc8c13b0b86312c31/typer_slim-0.21.0.tar.gz", hash = "sha256:f2dbd150cfa0fead2242e21fa9f654dfc64773763ddf07c6be9a49ad34f79557", size = 106841, upload-time = "2025-12-25T09:54:55.998Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b4/84/e97abf10e4a699194ff07fd586ec7f4cf867d9d04bead559a65f9e7aff84/typer_slim-0.21.0-py3-none-any.whl", hash = "sha256:92aee2188ac6fc2b2924bd75bb61a340b78bd8cd51fd9735533ce5a856812c8e", size = 47174, upload-time = "2025-12-25T09:54:54.609Z" },
+]
+
+[[package]]
+name = "types-networkx"
+version = "3.6.1.20251220"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/07/e3/dcc20d645dc0631b0df263959b8dde49dc47ad3c0537d8958bfefe692380/types_networkx-3.6.1.20251220.tar.gz", hash = "sha256:caf95e0d7777b969e50ceeb2c430d9d4dfe6b7bdee43c42dc9879a2d4408a790", size = 73500, upload-time = "2025-12-20T03:07:47.933Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/e7/fe40cfe7ba384d1f46fee835eb7727a4ee2fd80021a69add9553197b69a1/types_networkx-3.6.1.20251220-py3-none-any.whl", hash = "sha256:417ccbe7841f335a4c2b8e7515c3bc97a00fb5f686f399a763ef64392b209eac", size = 162715, upload-time = "2025-12-20T03:07:46.882Z" },
 ]
 
 [[package]]

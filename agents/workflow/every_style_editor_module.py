@@ -7,6 +7,7 @@ processing sequentially to prevent Ollama overload.
 
 import json
 import os
+from typing import cast
 
 import dspy
 
@@ -88,7 +89,9 @@ class EveryStyleEditorModule(dspy.Module):
         # Get preview for structure detection
         content_preview = content_to_review[:500]
 
-        analysis = self.analyzer(content=content_preview, token_count=str(token_count))
+        analysis = cast(
+            dspy.Prediction, self.analyzer(content=content_preview, token_count=str(token_count))
+        )
 
         # Small document? Use single-pass (no chunking)
         if not analysis.analysis.needs_chunking:
@@ -118,10 +121,13 @@ class EveryStyleEditorModule(dspy.Module):
                     f"EveryStyleEditorModule: Processing chunk {chunk.chunk_id + 1}/{len(chunks)}"
                 )
 
-                result = self.chunk_editor(
-                    chunk_content=chunk.content,
-                    chunk_position=chunk.position_label,
-                    previous_edits_summary=consistency_notes,
+                result = cast(
+                    dspy.Prediction,
+                    self.chunk_editor(
+                        chunk_content=chunk.content,
+                        chunk_position=chunk.position_label,
+                        previous_edits_summary=consistency_notes,
+                    ),
                 )
 
                 # Add chunk_id to result
@@ -159,8 +165,9 @@ class EveryStyleEditorModule(dspy.Module):
             # Get document preview for context
             doc_preview = content_to_review[:1000]
 
-            aggregated = self.aggregator(
-                chunk_edits=chunk_edits_json, original_document=doc_preview
+            aggregated = cast(
+                dspy.Prediction,
+                self.aggregator(chunk_edits=chunk_edits_json, original_document=doc_preview),
             )
 
             logger.success(
@@ -187,7 +194,7 @@ class EveryStyleEditorModule(dspy.Module):
         """
         logger.info("EveryStyleEditorModule: Using single-pass EveryStyleEditor")
         editor = dspy.Predict(EveryStyleEditor)
-        return editor(content_to_review=content)
+        return cast(dspy.Prediction, editor(content_to_review=content))
 
     def _fallback_raw_results(self, chunk_results: list[ChunkEditResult]) -> dspy.Prediction:
         """

@@ -249,7 +249,7 @@ def codify(
 
 @app.command()
 def check(
-    paths: Annotated[list[str], typer.Argument(help="Files or directories to check")] = None,
+    paths: Annotated[list[str] | None, typer.Argument(help="Files or directories to check")] = None,
     auto_fix: Annotated[
         bool, typer.Option("--fix", help="Auto-fix violations (runs ruff --fix)")
     ] = False,
@@ -269,7 +269,7 @@ def check(
         ce check src/ --fix         # Check and auto-fix src/
         ce check utils/policy/      # Check specific directory
     """
-    exit_code = run_check(paths=paths, auto_fix=auto_fix, staged_only=staged_only)
+    exit_code = run_check(".", paths=paths, auto_fix=auto_fix, staged_only=staged_only)
     raise typer.Exit(code=exit_code)
 
 
@@ -379,7 +379,7 @@ def index(
 @app.command()
 def init(
     dir_name: Annotated[
-        str,
+        str | None,
         typer.Option("--dir", "-d", help="Base directory name (.claude, .ce, .qwen, .compounding)"),
     ] = None,
     interactive: Annotated[
@@ -433,7 +433,7 @@ def init(
         dir_name = os.getenv("COMPOUNDING_DIR_NAME", ".ce")
 
     # Validate directory name
-    if not dir_name.startswith("."):
+    if not dir_name.startswith("."):  # type: ignore[union-attr]
         dir_name = f".{dir_name}"
 
     # Create paths instance with chosen directory

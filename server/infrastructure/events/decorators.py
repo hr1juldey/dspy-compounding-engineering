@@ -29,7 +29,7 @@ def track_tool_execution(total_stages: int = 4):
 
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def wrapper(*args: Any, ctx: Any = None, **kwargs: Any) -> dict:
+        async def wrapper(*args: Any, ctx: Any | None = None, **kwargs: Any) -> dict:
             # Clear previous events
             event_collector.clear()
 

@@ -2,6 +2,7 @@
 
 import os
 import threading
+from typing import Any
 
 
 class ServiceRegistry:
@@ -9,6 +10,10 @@ class ServiceRegistry:
 
     _instance = None
     _lock = threading.RLock()
+
+    # Declare instance attributes for type checker
+    _status: dict[str, Any]
+    lock: threading.RLock
 
     def __new__(cls):
         if cls._instance is None:
@@ -45,7 +50,7 @@ class ServiceRegistry:
                 from qdrant_client import QdrantClient
 
                 url = os.getenv("QDRANT_URL", "http://localhost:6333")
-                client = QdrantClient(url=url, timeout=90.0)
+                client = QdrantClient(url=url, timeout=90)
                 client.get_collections()
                 self._status["qdrant_available"] = True
             except Exception:
@@ -64,7 +69,14 @@ class ServiceRegistry:
             from qdrant_client import QdrantClient
 
             qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-            return QdrantClient(url=qdrant_url, timeout=90.0)
+            return QdrantClient(url=qdrant_url, timeout=90)
+
+    def get_qdrant_client_required(self):
+        """Returns Qdrant client or raises RuntimeError if unavailable."""
+        client = self.get_qdrant_client()
+        if client is None:
+            raise RuntimeError("Qdrant client not initialized - ensure Qdrant is running")
+        return client
 
     def check_api_keys(self, force: bool = False) -> bool:
         """Check if required API keys are available."""
@@ -95,6 +107,8 @@ class ServiceRegistry:
             "ollama": "True",
         }
         env_var = key_map.get(provider)
+        if env_var is None:
+            return False  # Unknown provider, no key available
         return bool(os.getenv(env_var)) if env_var != "True" else True
 
     def get_kb(self, force: bool = False):

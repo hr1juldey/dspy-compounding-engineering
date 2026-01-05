@@ -1,7 +1,9 @@
 import glob
 import os
 import re
+from typing import cast
 
+import dspy
 from rich.markdown import Markdown
 from rich.prompt import Prompt
 from rich.table import Table
@@ -28,7 +30,7 @@ def consistency_check_todos(todos_dir: str) -> None:
     console.print("[green]Consistency check passed.[/green]")
 
 
-def _fill_recommended_action(content: str, solution_text: str = None) -> str:
+def _fill_recommended_action(content: str, solution_text: str | None = None) -> str:
     """Replace the 'Recommended Action' placeholder with actual recommendation."""
     placeholder = "*To be filled during triage.*"
 
@@ -95,7 +97,7 @@ def run_triage():  # noqa: C901
 
     # Initialize KB-augmented triage predictor
     triage_predictor = KBPredict.wrap(
-        TriageAgent,
+        TriageAgent,  # type: ignore[arg-type]
         kb_tags=["triage", "triage-decisions", "triage-sessions", "code-review"],
     )
 
@@ -118,7 +120,7 @@ def run_triage():  # noqa: C901
 
         # Use LLM to present the finding
         with console.status("Analyzing finding..."):
-            response = triage_predictor(finding_content=content)
+            response = cast(dspy.Prediction, triage_predictor(finding_content=content))
 
         console.print(Markdown(response.formatted_presentation))
         console.print("\n")

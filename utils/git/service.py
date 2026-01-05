@@ -1,3 +1,4 @@
+import re
 import shutil
 import subprocess
 
@@ -15,6 +16,18 @@ class GitService:
         "poetry.lock",
         "Gemfile.lock",
     ]
+
+    @staticmethod
+    def sanitize_branch_name(name: str) -> str:
+        """Sanitize a string to be a valid git branch name."""
+        # Convert to lowercase
+        name = name.lower()
+        # Remove invalid characters (keep alphanumeric, hyphens, underscores, slashes)
+        name = re.sub(r"[^a-z0-9\-_/.]", "-", name)
+        # Remove leading/trailing hyphens and multiple consecutive hyphens
+        name = re.sub(r"-+", "-", name)
+        name = name.strip("-")
+        return name
 
     @staticmethod
     def filter_diff(diff_text: str) -> str:
@@ -287,6 +300,20 @@ class GitService:
             raise RuntimeError(f"Failed to create feature worktree: {e.stderr}") from e
 
     @staticmethod
+    def cleanup_worktree(worktree_path: str) -> None:
+        """Remove a git worktree and clean up the directory."""
+        try:
+            run_safe_command(
+                ["git", "worktree", "remove", "--force", worktree_path],
+                check=True,
+                capture_output=True,
+            )
+            # Also try to remove the directory if it still exists
+            shutil.rmtree(worktree_path, ignore_errors=True)
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to cleanup worktree {worktree_path}: {e.stderr}")
+
+    @staticmethod
     def get_pushed_commits(
         branch: str = "HEAD", remote: str = "origin", limit: int = 100
     ) -> list[str]:
@@ -461,4 +488,53 @@ class GitService:
 
         except subprocess.CalledProcessError as e:
             logger.warning(f"Failed to get changed files for {commit_sha}: {e}")
+            return []
+
+    @staticmethod
+    def get_file_history(file_path: str, max_count: int = 10) -> list[dict]:
+        """
+        Get commit history for a specific file.
+
+        Args:
+            file_path: Path to the file
+            max_count: Maximum number of commits to return
+
+        Returns:
+            List of dicts with commit info (sha, author, date, message)
+        """
+        try:
+            result = run_safe_command(
+                [
+                    "git",
+                    "log",
+                    f"-{max_count}",
+                    "--format=%H|%an|%at|%s",
+                    "--",
+                    file_path,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+
+            history = []
+            for line in result.stdout.strip().split("\n"):
+                if not line.strip():
+                    continue
+
+                parts = line.split("|", 3)
+                if len(parts) >= 4:
+                    history.append(
+                        {
+                            "sha": parts[0],
+                            "author": parts[1],
+                            "date": int(parts[2]),
+                            "message": parts[3],
+                        }
+                    )
+
+            return history
+
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Failed to get file history for {file_path}: {e}")
             return []

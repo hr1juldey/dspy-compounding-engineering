@@ -52,10 +52,10 @@ class EntityExtractor:
             except Exception as e:
                 logger.error(f"Failed to load enrichment module: {e}")
                 self.use_llm_enrichment = False
-                self.enrichment_module = None
+                self.enrichment_module = None  # type: ignore[assignment]
         else:
             logger.debug("LLM entity enrichment DISABLED (fast AST-only mode)")
-            self.enrichment_module = None
+            self.enrichment_module = None  # type: ignore[assignment]
 
     def extract_from_python(self, code: str, filepath: str) -> list[Entity]:
         """
@@ -118,6 +118,10 @@ class EntityExtractor:
         for entity in entities:
             # Only enrich Functions, Methods, and Classes
             if entity.type not in ["Function", "Method", "Class"]:
+                enriched.append(entity)
+                continue
+
+            if not self.enrichment_module:
                 enriched.append(entity)
                 continue
 

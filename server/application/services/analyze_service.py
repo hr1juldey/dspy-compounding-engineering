@@ -25,7 +25,7 @@ class AnalyzeService:
         Returns:
             Task ID for tracking
         """
-        task = analyze_code_task.delay(
+        task = analyze_code_task.delay(  # type: ignore[no-untyped-call]
             repo_root=repo_root,
             entity=entity,
             analysis_type=analysis_type,

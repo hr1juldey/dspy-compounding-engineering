@@ -13,7 +13,7 @@ class FunctionExtractor:
         """Extract all top-level function entities from AST."""
         entities = []
 
-        for node in tree.body:
+        for node in tree.body:  # type: ignore[attr-defined]
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 entity_id = generate_entity_id(filepath, f"FUNCTION_{node.name}", node.lineno)
 

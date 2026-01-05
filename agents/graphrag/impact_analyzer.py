@@ -78,7 +78,7 @@ class ImpactAnalyzerModule(dspy.Module):
         super().__init__()
 
         # Initialize graph store and GraphRAG
-        qdrant = registry.get_qdrant_client()
+        qdrant = registry.get_qdrant_client_required()
         project_hash = get_project_hash()
         self.graph_store = GraphStore(qdrant, EmbeddingProvider(), f"entities_{project_hash}")
         self.graph_rag = CodeGraphRAG(self.graph_store)

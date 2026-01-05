@@ -27,5 +27,5 @@ class CodifyService:
         Returns:
             Task ID for async tracking
         """
-        result = codify_task.delay(repo_root=repo_root, feedback=feedback, source=source)
+        result = codify_task.delay(repo_root=repo_root, feedback=feedback, source=source)  # type: ignore[no-untyped-call]
         return result.id
