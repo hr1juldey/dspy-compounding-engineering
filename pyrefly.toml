@@ -1,0 +1,23 @@
+project-includes = [
+    "agents",
+    "workflows",
+    "utils",
+    "server",
+    "cli.py",
+    "config.py",
+]
+project-excludes = [
+    "**/__pycache__",
+    ".venv",
+    ".git",
+    "node_modules",
+    "**/.knowledge",
+    "storage",
+    "logs",
+]
+python-version = "3.12.0"
+infer-with-first-use = false
+
+[errors]
+missing-import = "error"
+untyped-import = "ignore"

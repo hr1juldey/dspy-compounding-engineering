@@ -1,0 +1,31 @@
+{
+  "include": [
+    "agents",
+    "workflows",
+    "utils",
+    "server",
+    "cli.py",
+    "config.py"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    ".venv",
+    ".git",
+    "node_modules",
+    "**/.knowledge",
+    "storage",
+    "logs"
+  ],
+  "typeCheckingMode": "basic",
+  "pythonVersion": "3.12",
+  "pythonPath": "./.venv/bin/python",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportGeneralTypeIssues": true,
+  "reportOptionalMemberAccess": true,
+  "reportOptionalSubscript": true,
+  "reportPrivateImportUsage": false,
+  "reportUnusedImport": "warning",
+  "venvPath": ".",
+  "venv": ".venv"
+}

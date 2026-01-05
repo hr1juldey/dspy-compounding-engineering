@@ -8,3 +8,16 @@ repos:
         args: [--fix ]
       # Run the formatter.
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      # Type checking with pyrefly (informational - doesn't block commits yet)
+      - id: pyrefly-check
+        name: pyrefly type check (informational)
+        entry: bash -c 'echo "🔍 Checking types with pyrefly..." && uvx pyrefly check --summarize-errors || echo "⚠️  Type errors detected - review and fix before next check"'
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+        fail_fast: false
