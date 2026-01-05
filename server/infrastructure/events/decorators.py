@@ -3,8 +3,8 @@
 from functools import wraps
 from typing import Any, Callable
 
-from infrastructure.events.collector import event_collector
-from infrastructure.events.reporter import EventReporter
+from server.infrastructure.events.collector import event_collector
+from server.infrastructure.events.reporter import EventReporter
 
 
 def track_tool_execution(total_stages: int = 4):

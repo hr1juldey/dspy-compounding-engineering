@@ -7,8 +7,8 @@ Contains tools for indexing, gardening, codifying, and compressing knowledge.
 import asyncio
 
 from fastmcp import FastMCP
-from infrastructure.events.decorators import track_tool_execution
 
+from server.infrastructure.events.decorators import track_tool_execution
 from utils.knowledge import KnowledgeBase
 from utils.paths import get_paths, reset_paths
 from workflows.codify import run_codify

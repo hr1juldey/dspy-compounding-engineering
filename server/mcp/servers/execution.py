@@ -7,9 +7,9 @@ Contains tools for running work items, code reviews, and policy checks.
 import asyncio
 
 from fastmcp import FastMCP
-from infrastructure.events.decorators import track_tool_execution
 
 from server.application.services.check_service import CheckService
+from server.infrastructure.events.decorators import track_tool_execution
 from utils.paths import get_paths, reset_paths
 from workflows.review import run_review
 from workflows.work import run_unified_work

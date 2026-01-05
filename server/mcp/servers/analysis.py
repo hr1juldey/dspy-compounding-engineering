@@ -7,8 +7,8 @@ Contains tools that use DSPy agents for code understanding.
 import asyncio
 
 from fastmcp import FastMCP
-from infrastructure.events.decorators import track_tool_execution
 
+from server.infrastructure.events.decorators import track_tool_execution
 from utils.paths import get_paths, reset_paths
 from workflows.analyze import run_analyze
 from workflows.plan import run_plan

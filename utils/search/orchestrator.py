@@ -3,9 +3,8 @@
 import time
 from typing import List
 
-from infrastructure.events.collector import event_collector
-from infrastructure.events.event import EventStatus
-
+from server.infrastructure.events.collector import event_collector
+from server.infrastructure.events.event import EventStatus
 from utils.io.logger import logger
 from utils.search.providers.base import SearchResult
 from utils.search.providers.factory import SearchProviderFactory

@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from infrastructure.events.event import OperationEvent
+from server.infrastructure.events.event import OperationEvent
 
 
 class EventCollector:

@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from infrastructure.events.event import OperationEvent
+from server.infrastructure.events.event import OperationEvent
 
 
 class EventReporter:

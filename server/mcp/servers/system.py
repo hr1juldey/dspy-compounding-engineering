@@ -8,8 +8,8 @@ import asyncio
 import os
 
 from fastmcp import FastMCP
-from infrastructure.events.decorators import track_tool_execution
 
+from server.infrastructure.events.decorators import track_tool_execution
 from utils.paths import get_paths, reset_paths
 from workflows.generate_command import run_generate_command
 from workflows.triage import run_triage
