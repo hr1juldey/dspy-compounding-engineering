@@ -42,7 +42,7 @@ class RepoResearchAnalyst(dspy.Signature):
        - Document naming conventions and code organization
 
     **Available Tools:**
-    - `fetch_documentation(url)`: Fetch external documentation from a URL.
+    - `web_search(query)`: Search the web for documentation, code examples, news, and facts.
     - `semantic_search(query, limit)`: Vector search for relevant code by meaning.
       Use this FIRST to find files related to a concept or feature.
     - `search_codebase(query, path)`: Grep-based keyword search in project files.

@@ -11,7 +11,38 @@ from server.config import registry
 from utils.io import list_directory, read_file_range, search_files
 from utils.web.documentation import DocumentationFetcher
 
-# --- Documentation Tools ---
+# --- Documentation & Web Search Tools ---
+
+
+def get_web_search_tool(base_dir: str = ".") -> dspy.Tool:
+    """Returns unified web search tool (documentation, facts, code, news)."""
+    from utils.search.orchestrator import WebSearchOrchestrator
+
+    orchestrator = WebSearchOrchestrator()
+
+    def web_search(query: str) -> str:
+        """
+        Search the web for information. Use for:
+        - Documentation and tutorials
+        - Code examples and APIs
+        - Recent news and releases
+        - Fact verification
+
+        Returns formatted search results with titles, URLs, and snippets.
+        """
+        results = orchestrator.search(query, max_results=10)
+
+        if not results:
+            return "No results found."
+
+        # Format results for agent consumption
+        formatted = []
+        for i, result in enumerate(results, 1):
+            formatted.append(f"{i}. {result.title}\n   URL: {result.url}\n   {result.snippet}\n")
+
+        return "\n".join(formatted)
+
+    return dspy.Tool(web_search)
 
 
 def get_documentation_tool() -> dspy.Tool:
@@ -128,10 +159,10 @@ def get_gather_context_tool() -> dspy.Tool:
 def get_research_tools(base_dir: str = ".") -> list[dspy.Tool]:
     """
     Get the standard set of tools for research agents.
-    Includes: documentation fetcher, semantic search, codebase grep, file reader.
+    Includes: web search, semantic search, codebase grep, file reader.
     """
     return [
-        get_documentation_tool(),
+        get_web_search_tool(base_dir),  # Unified web search (docs, facts, code)
         get_semantic_search_tool(),  # Vector search for relevant code
         get_codebase_search_tool(base_dir),  # Grep-based keyword search
         get_file_reader_tool(base_dir),  # Read specific file sections

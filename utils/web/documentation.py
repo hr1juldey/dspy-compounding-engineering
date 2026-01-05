@@ -156,7 +156,13 @@ class DocumentationFetcher:
         # Note: We send the URL to Jina as a string. Jina performs the fetch.
         # We've already validated the URL is safe (not local) in self.fetch().
         jina_url = f"https://r.jina.ai/{url}"
-        with httpx.Client(timeout=self.timeout) as client:
+        timeout_config = httpx.Timeout(
+            connect=5.0,  # DNS + TCP connection timeout
+            read=float(self.timeout),
+            write=5.0,
+            pool=5.0,
+        )
+        with httpx.Client(timeout=timeout_config) as client:
             response = client.get(jina_url)
             response.raise_for_status()
             return response.text
@@ -179,8 +185,14 @@ class DocumentationFetcher:
 
             # Use PinnedTransport to prevent DNS rebinding attacks
             transport = PinnedTransport(hostname, safe_ip)
+            timeout_config = httpx.Timeout(
+                connect=5.0,  # DNS + TCP connection timeout
+                read=float(self.timeout),
+                write=5.0,
+                pool=5.0,
+            )
             with httpx.Client(
-                timeout=self.timeout, follow_redirects=True, transport=transport
+                timeout=timeout_config, follow_redirects=True, transport=transport
             ) as client:
                 response = client.get(url)
                 response.raise_for_status()

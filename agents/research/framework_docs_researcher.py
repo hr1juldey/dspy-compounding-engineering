@@ -27,7 +27,7 @@ class FrameworkDocsResearcher(dspy.Signature):
        - Identify integration patterns with other tools
 
     **Available Tools:**
-    - `fetch_documentation(url)`: Fetch external documentation from a URL.
+    - `web_search(query)`: Search the web for documentation, code examples, news, and facts.
     - `semantic_search(query, limit)`: Vector search for relevant code by meaning.
     - `search_codebase(query, path)`: Grep-based keyword search in project files.
     - `read_file(file_path, start_line, end_line)`: Read specific file sections.

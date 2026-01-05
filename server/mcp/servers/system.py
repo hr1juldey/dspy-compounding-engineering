@@ -8,6 +8,7 @@ import asyncio
 import os
 
 from fastmcp import FastMCP
+from infrastructure.events.decorators import track_tool_execution
 
 from utils.paths import get_paths, reset_paths
 from workflows.generate_command import run_generate_command
@@ -17,10 +18,12 @@ system_server = FastMCP("System")
 
 
 @system_server.tool(task=True)  # SLOW: background if client supports (optional mode)
+@track_tool_execution(total_stages=2)
 async def triage_issues(
     repo_root: str,
     pattern: str | None = None,
     dry_run: bool = False,
+    ctx=None,
 ) -> dict:
     """
     Triage and categorize codebase issues.
@@ -37,19 +40,33 @@ async def triage_issues(
     get_paths(repo_root)
 
     try:
-        result = await asyncio.to_thread(run_triage, pattern=pattern, dry_run=dry_run)
+        if ctx:
+            await ctx.report_progress(progress=2, total=2, message="Triaging issues...")
+
+        result = await asyncio.wait_for(
+            asyncio.to_thread(run_triage, pattern=pattern, dry_run=dry_run),
+            timeout=600,  # 10 minutes
+        )
 
         return {"success": True, "result": result, "pattern": pattern, "dry_run": dry_run}
 
+    except asyncio.TimeoutError:
+        if ctx:
+            ctx.logger.error("Issue triage timed out after 10 minutes")
+        raise
     except Exception as e:
-        return {"success": False, "error": str(e), "pattern": pattern}
+        if ctx:
+            ctx.logger.error(f"Issue triage failed: {e}")
+        raise
 
 
 @system_server.tool(task=True)  # SLOW: background if client supports (optional mode)
+@track_tool_execution(total_stages=2)
 async def generate_command(
     repo_root: str,
     description: str,
     dry_run: bool = False,
+    ctx=None,
 ) -> dict:
     """
     Generate new CLI command from natural language description.
@@ -66,14 +83,24 @@ async def generate_command(
     get_paths(repo_root)
 
     try:
-        result = await asyncio.to_thread(
-            run_generate_command, description=description, dry_run=dry_run
+        if ctx:
+            await ctx.report_progress(progress=2, total=2, message="Generating command...")
+
+        result = await asyncio.wait_for(
+            asyncio.to_thread(run_generate_command, description=description, dry_run=dry_run),
+            timeout=600,  # 10 minutes
         )
 
         return {"success": True, "result": result, "description": description, "dry_run": dry_run}
 
+    except asyncio.TimeoutError:
+        if ctx:
+            ctx.logger.error("Command generation timed out after 10 minutes")
+        raise
     except Exception as e:
-        return {"success": False, "error": str(e), "description": description}
+        if ctx:
+            ctx.logger.error(f"Command generation failed: {e}")
+        raise
 
 
 @system_server.tool()
